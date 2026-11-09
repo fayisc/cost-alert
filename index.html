@@ -83,6 +83,27 @@ td{border-bottom:1px solid #eef0f4;padding:8px 6px;vertical-align:top}
 .yday .up{color:#ff8a80}.yday .down{color:#81c784}
 .meta{grid-column:1/-1;display:flex;justify-content:space-between;gap:12px;font-size:17px;opacity:.85}
 .empty{font-size:28px;color:#6f7a90;text-align:center;padding:50px 0}
+.tabs{display:flex;gap:8px;padding:14px 28px 0}
+.tab{background:#1f2533;color:#aab3c5;border:0;border-radius:10px;padding:10px 26px;font-size:18px;font-weight:800;cursor:pointer;font-family:inherit}
+.tab.active{background:var(--yellow);color:var(--ink)}
+#recent{padding:16px 28px 28px}
+.searchbar{display:flex;gap:10px}
+.searchbar input{font-size:22px;padding:14px 16px;background:#1f2533;color:#eef1f6;border:2px solid #2b3346;border-radius:10px}
+.searchbar input::placeholder{color:#6f7a90}
+.searchbar .btn{font-size:18px;padding:0 24px}
+.qinfo{color:#9aa4b8;margin:14px 0 10px;font-size:15px}
+.rrow{display:grid;grid-template-columns:110px 1fr auto;gap:6px 18px;align-items:center;padding:14px 18px;border-radius:10px;background:#1b2130;margin-bottom:10px}
+.rrow.latest{border-left:5px solid var(--yellow)}
+.rdate{color:#9aa4b8;font-size:15px;line-height:1.4}
+.rname{font-size:22px;font-weight:800;word-break:break-word}
+.rcode{font-size:14px;color:#9aa4b8}
+.rtag{display:inline-block;background:var(--yellow);color:var(--ink);font-size:11px;font-weight:800;padding:2px 7px;border-radius:5px;margin-left:8px;vertical-align:middle;letter-spacing:.5px}
+.rprice{text-align:right;white-space:nowrap}
+.rprice .old{font-size:18px;margin-right:6px}
+.rnew{font-size:28px;font-weight:800}
+.rdiff{font-size:14px}
+.rrow .up{color:#ff6b6b}.rrow .down{color:#66bb6a}
+@media(max-width:700px){.tabs,#recent{padding-left:16px;padding-right:16px}.rrow{grid-template-columns:1fr}.rprice{text-align:left}.searchbar input{font-size:18px}}
 @media(max-width:700px){.bhead,#blist{padding-left:16px;padding-right:16px}.bhead h1{font-size:24px}.item{grid-template-columns:1fr}.price{text-align:left}.name{font-size:26px}.new{font-size:36px}.meta{flex-direction:column;gap:2px}}
 
 #start{position:fixed;inset:0;background:#12161f;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;z-index:20;padding:16px;text-align:center}
@@ -167,7 +188,19 @@ td{border-bottom:1px solid #eef0f4;padding:8px 6px;vertical-align:top}
     <div class="bright"><div id="clock"></div>
       <div class="r"><button class="btn y hidden" id="toAdmin">Admin</button><button class="btn g" data-logout>Log out</button></div></div>
   </header>
+  <nav class="tabs">
+    <button class="tab active" data-tab="live">Live</button>
+    <button class="tab" data-tab="recent">Recent</button>
+  </nav>
   <main id="blist"></main>
+  <main id="recent" class="hidden">
+    <div class="searchbar">
+      <input id="q" placeholder="Scan barcode or type name / code" autocomplete="off" enterkeyhint="search">
+      <button class="btn y" id="qbtn">Search</button>
+    </div>
+    <div id="qinfo" class="qinfo"></div>
+    <div id="qres"></div>
+  </main>
 </section>
 <div id="start" class="hidden"><button>▶ START BOARD</button><p>Tap once — you will hear the alarm once as a sound check. Turn the PC volume up.</p></div>
 <div id="pop"><div class="box" id="box"></div></div>
@@ -175,7 +208,7 @@ td{border-bottom:1px solid #eef0f4;padding:8px 6px;vertical-align:top}
 
 <script>
 /* ===================== SETTINGS ===================== */
-const APP_VERSION = "1.1.0";               // bump this AND version.json on every release
+const APP_VERSION = "1.2.0";               // bump this AND version.json on every release
 const SUPABASE_URL = "https://gsjdwsbcinfuluoffcah.supabase.co";   // e.g. https://abcd1234.supabase.co
 const SUPABASE_KEY = "sb_publishable_ggkvoNUwNfRT6ET5T5fOkw_zlarg8-p";   // publishable / anon key (safe to put here)
 const SHOP = "Muhammed Bu Matar Trading";
@@ -223,8 +256,10 @@ function showAuth(setup,message){
   $("lbtn").textContent=setupMode?"Create admin login":"Log in";
   $("lpass").setAttribute("autocomplete",setupMode?"new-password":"current-password");
   $("lmsg").textContent=message||"";
-  setTimeout(()=>$("lname").focus(),50);
+  focusIfIdle("lname");
 }
+// move the cursor only if the user hasn't already clicked into another box
+function focusIfIdle(id){setTimeout(()=>{const a=document.activeElement;if(!a||a===document.body||a.offsetParent===null)$(id).focus();},50);}
 function go(mode){
   stopTimers();hideAll();shown=null;
   const admin=S.role==="admin";
@@ -234,12 +269,13 @@ function go(mode){
     $("who1").textContent=`${SHOP} · ${S.name} (admin)`;
     loadProducts();loadList();loadUsers();
     timers.push(setInterval(loadList,5000));
-    setTimeout(()=>$("code").focus(),50);
+    focusIfIdle("code");
   }else{
     document.body.classList.add("dark");
     $("board").classList.remove("hidden");
     $("who2").textContent=`${SHOP} · ${S.name}`;
     $("toAdmin").classList.toggle("hidden",!admin);
+    setTab("live");
     if(!admin&&!started)$("start").classList.remove("hidden");
     poll();timers.push(setInterval(poll,3000));
   }
@@ -477,6 +513,48 @@ function tick(){
   $("clock").innerHTML=d.toLocaleDateString("en-GB",{weekday:"short",day:"2-digit",month:"short",year:"numeric"})+
     "<br>"+d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
 }
+/* ---------- Recent tab: search history by barcode / code / name ---------- */
+let qTimer=null,qSeq=0;
+const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function dayLabel(s){
+  const d=s.slice(0,10);
+  if(today&&d===today)return"Today";
+  if(today){const y=new Date(today+"T12:00:00");y.setDate(y.getDate()-1);
+    if(d===y.toISOString().slice(0,10))return"Yesterday";}
+  return `${s.slice(8,10)} ${MON[+s.slice(5,7)-1]} ${s.slice(0,4)}`;
+}
+function setTab(t){
+  document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.tab===t));
+  $("blist").classList.toggle("hidden",t!=="live");
+  $("recent").classList.toggle("hidden",t!=="recent");
+  if(t==="recent"){search();$("q").focus();}
+}
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
+function rowHtml(r,latest){
+  const c=cls(r);
+  return `<div class="rrow ${latest?"latest":""}">
+    <div class="rdate">${dayLabel(r.changed_at)}<br>${hm(r.changed_at)}</div>
+    <div><div class="rname">${esc(r.name)}${latest?'<span class="rtag">CURRENT</span>':""}</div>
+      <div class="rcode">${r.code?"Code "+esc(r.code):""}${r.supplier?" · "+esc(r.supplier):""}${r.note?" · "+esc(r.note):""}</div></div>
+    <div class="rprice">${r.old_cost!=null?`<span class="old">${f2(r.old_cost)}</span>→ `:""}<span class="rnew ${c}">${f2(r.new_cost)}</span>
+      <div class="rdiff">${diffHtml(r)}</div></div></div>`;
+}
+async function search(){
+  const s=$("q").value.trim(),my=++qSeq;
+  $("qinfo").textContent="Searching…";
+  try{
+    const res=await rpc("ca_search",{...T(),p_q:s,p_days:30});
+    if(my!==qSeq)return;                        // a newer search already started
+    const seenNames=new Set();
+    $("qres").innerHTML=res.map(r=>{const latest=!seenNames.has(r.name);seenNames.add(r.name);return rowHtml(r,latest&&!!s);}).join("")
+      ||`<div class="empty">No cost changes found${s?` for "${esc(s)}"`:""}</div>`;
+    $("qinfo").textContent=s?`${res.length} change(s) for "${s}" — newest first`:`All cost changes in the last 30 days (${res.length}) — newest first`;
+  }catch(e){if(my===qSeq)$("qinfo").textContent="✗ "+e.message;}
+}
+$("q").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();clearTimeout(qTimer);search();}});
+$("q").addEventListener("input",()=>{clearTimeout(qTimer);qTimer=setTimeout(search,400);});
+$("qbtn").onclick=()=>{clearTimeout(qTimer);search();};
+
 /* ---------- version + update notice ---------- */
 document.querySelectorAll(".ver").forEach(e=>e.textContent="v"+APP_VERSION);
 async function checkUpdate(){

@@ -6,6 +6,7 @@ Cost-change alert board for **Muhammed Bu Matar Trading**.
 
 - **Admin** (office): scan or type a product, enter the new cost, save.
 - **Staff** (counter, other office, phone): full-screen board that sounds an alarm and shows a pop-up — old cost → new cost — until they press **SEEN**.
+- **Recent** tab: staff scan a barcode or type a name to see a product's cost history.
 - Works on any Wi-Fi or network; only internet is needed.
 
 ## How it's built

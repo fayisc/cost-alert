@@ -149,6 +149,24 @@ begin
   return json_build_object('ok', true);
 end $$;
 
+-- search (any logged-in user): empty search = last p_days days, text search = all history (max 200)
+create or replace function public.ca_search(p_token uuid, p_q text default '', p_days int default 30)
+returns json language plpgsql security definer set search_path = public as $$
+declare s text := trim(coalesce(p_q,''));
+begin
+  perform public.ca_auth(p_token);
+  return coalesce((
+    select json_agg(json_build_object(
+      'id', c.id, 'code', c.code, 'name', c.name, 'old_cost', c.old_cost, 'new_cost', c.new_cost,
+      'supplier', c.supplier, 'note', c.note, 'changed_at', public.ca_local(c.changed_at)
+    ) order by c.id desc)
+    from (select * from public.ca_changes c
+          where (s = '' and c.changed_at >= now() - make_interval(days => greatest(1, least(366, coalesce(p_days,30)))))
+             or (s <> '' and (c.code = s or c.code ilike '%' || s || '%' or c.name ilike '%' || s || '%'
+                              or c.supplier ilike '%' || s || '%'))
+          order by c.id desc limit 200) c), '[]'::json);
+end $$;
+
 -- ---------- admin: costs ----------
 create or replace function public.ca_add(p_token uuid, p_code text, p_name text, p_old numeric, p_new numeric,
                                          p_supplier text default '', p_note text default '')
@@ -249,7 +267,7 @@ revoke execute on function public.ca_local(timestamptz) from public, anon, authe
 revoke execute on function public.ca_auth(uuid, boolean) from public, anon, authenticated;
 grant execute on function
   public.ca_has_users(), public.ca_login(text, text), public.ca_setup(text, text), public.ca_logout(uuid),
-  public.ca_feed(uuid, int), public.ca_seen(uuid, bigint),
+  public.ca_feed(uuid, int), public.ca_seen(uuid, bigint), public.ca_search(uuid, text, int),
   public.ca_add(uuid, text, text, numeric, numeric, text, text), public.ca_lookup(uuid, text),
   public.ca_products(uuid), public.ca_delete(uuid, bigint),
   public.ca_users_list(uuid), public.ca_user_save(uuid, text, text, text), public.ca_user_remove(uuid, bigint)

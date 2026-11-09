@@ -2,6 +2,15 @@
 
 All notable changes to Cost Alert. Versions follow `MAJOR.MINOR.PATCH`.
 
+## v1.2.0 — 2026-11-09
+### Added
+- **Recent** tab on the staff board: scan a barcode or type a name/code/supplier to see that product's cost history (newest first, latest marked **CURRENT**). Empty search shows all changes from the last 30 days.
+- Alerts still pop up over the Recent tab.
+- Database: new `ca_search` function (any logged-in user).
+
+### Fixed
+- Login screen no longer jumps the cursor back to the Name box if you start typing quickly.
+
 ## v1.1.0 — 2026-11-09
 ### Changed
 - Alert sound is now a loud siren (3 × "wee-woo" sweeps, ~2 s) instead of a short beep.
