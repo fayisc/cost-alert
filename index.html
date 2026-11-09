@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cost Alert</title>
+<!--
+  COST CHANGE ALERT (online)  -  Muhammed Bu Matar Trading
+  One link for everyone, works on any Wi-Fi / any office / phone.
+  Admin login  -> update costs, see who confirmed, manage staff logins.
+  Staff login  -> full-screen board, beep + pop-up until they press SEEN.
+  Only setting: SUPABASE_URL and SUPABASE_KEY in the <script> below.
+-->
+<style>
+:root{--ink:#1d2330;--muted:#6b7385;--line:#e3e6ec;--bg:#f4f5f7;--card:#fff;--yellow:#ffd54a;--up:#c62828;--down:#2e7d32}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{font-family:"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--ink)}
+body.dark{background:#12161f;color:#eef1f6}
+.hidden{display:none!important}
+.btn{border:0;border-radius:8px;padding:9px 14px;font-weight:700;cursor:pointer;font-size:14px;font-family:inherit}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.y{background:var(--yellow);color:var(--ink)}
+.btn.g{background:#2b3346;color:#fff}
+.btn.dark{background:var(--ink);color:#fff}
+.btn.wide{width:100%;padding:13px;font-size:18px;margin-top:16px}
+.up{color:var(--up)}.down{color:var(--down)}.ok{color:var(--down);font-weight:600}
+.muted{color:var(--muted);font-size:12px}
+.msg{margin-top:10px;font-weight:600;min-height:22px}
+label{display:block;font-size:13px;font-weight:600;color:#556;margin:12px 0 4px}
+input,select{width:100%;padding:10px 12px;font-size:17px;border:1px solid #cdd2dc;border-radius:7px;font-family:inherit;background:#fff;color:var(--ink)}
+input:focus,select:focus{outline:2px solid #3b82f6;border-color:#3b82f6}
+.card{background:var(--card);border-radius:10px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.08);min-width:0}
+
+/* login */
+#auth{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
+.authcard{width:min(400px,100%)}
+.authcard h1{margin:0;font-size:26px;letter-spacing:1px}
+.note{background:#fff4c2;border-radius:8px;padding:10px 12px;margin-top:12px;font-weight:600}
+
+/* admin */
+.top{background:var(--ink);color:#fff;padding:12px 18px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.top small{display:block;color:#9aa4b8;font-weight:400}
+.top .r{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#net1{color:#ff8a80;font-size:13px}
+.grid{max-width:1100px;margin:0 auto;padding:20px;display:grid;grid-template-columns:minmax(280px,380px) 1fr;gap:20px}
+.span{grid-column:1/-1}
+@media(max-width:800px){.grid{grid-template-columns:1fr;padding:14px}}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#diff{margin-top:12px;font-size:20px;font-weight:700;min-height:28px}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px;margin-top:8px}
+th{text-align:left;color:#667;font-weight:600;border-bottom:2px solid var(--line);padding:8px 6px}
+td{border-bottom:1px solid #eef0f4;padding:8px 6px;vertical-align:top}
+.old{text-decoration:line-through;opacity:.55}
+.wait{color:#e65100;font-weight:600}
+.del{background:none;border:0;color:#b00;cursor:pointer;font-size:16px}
+.userform{display:grid;grid-template-columns:1fr 1fr 140px auto;gap:10px;align-items:end}
+.userform .btn{height:44px}
+@media(max-width:700px){.userform{grid-template-columns:1fr 1fr}}
+
+/* board */
+.bhead{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 28px;background:#1b2130;border-bottom:4px solid var(--yellow)}
+.bhead h1{margin:0;font-size:32px;letter-spacing:1px}
+.bhead small{color:#9aa4b8;font-size:15px}
+.bright{text-align:right}
+.bright .r{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}
+#clock{font-size:22px;font-weight:600}
+#net2{font-size:15px;color:#ff6b6b;margin-top:4px}
+#blist{padding:12px 28px 28px}
+.sec{font-size:16px;color:#9aa4b8;letter-spacing:3px;margin:20px 0 10px;text-transform:uppercase}
+.item{display:grid;grid-template-columns:1fr auto;gap:6px 24px;align-items:center;padding:16px 22px;border-radius:12px;margin-bottom:12px}
+.today{background:#fff4c2;color:var(--ink)}
+.today.unseen{background:#ffe082}
+.yday{background:#1f2533;color:#aab3c5;opacity:.65}
+.name{font-size:34px;font-weight:800;line-height:1.15;word-break:break-word}
+.code{font-size:17px;opacity:.75}
+.price{text-align:right;white-space:nowrap}
+.price .old{font-size:24px;margin-right:10px}
+.new{font-size:46px;font-weight:800}
+.arrow{font-size:34px}
+.item .up{color:#d32f2f}.item .down{color:#2e7d32}
+.yday .up{color:#ff8a80}.yday .down{color:#81c784}
+.meta{grid-column:1/-1;display:flex;justify-content:space-between;gap:12px;font-size:17px;opacity:.85}
+.empty{font-size:28px;color:#6f7a90;text-align:center;padding:50px 0}
+@media(max-width:700px){.bhead,#blist{padding-left:16px;padding-right:16px}.bhead h1{font-size:24px}.item{grid-template-columns:1fr}.price{text-align:left}.name{font-size:26px}.new{font-size:36px}.meta{flex-direction:column;gap:2px}}
+
+#start{position:fixed;inset:0;background:#12161f;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;z-index:20;padding:16px;text-align:center}
+#start button{font-size:32px;padding:22px 48px;border-radius:14px;border:0;background:var(--yellow);color:var(--ink);font-weight:800;cursor:pointer}
+#start p{color:#9aa4b8;font-size:18px}
+#pop{position:fixed;inset:0;background:rgba(0,0,0,.78);display:none;align-items:center;justify-content:center;z-index:10;padding:16px}
+.box{background:#fff;color:var(--ink);border-radius:18px;width:min(740px,100%);padding:28px 30px;text-align:center;border:8px solid #d32f2f;animation:pulse .8s infinite alternate}
+@keyframes pulse{to{border-color:var(--yellow)}}
+.box h2{margin:0 0 6px;font-size:40px;color:#d32f2f;letter-spacing:1px}
+.box .pname{font-size:38px;font-weight:800;margin:10px 0 2px;word-break:break-word}
+.box .pcode{font-size:18px;color:#667}
+.box .prices{font-size:30px;margin:18px 0 6px}
+.box .prices b{font-size:52px}
+.box .d{font-size:24px;font-weight:700}
+.box .n{font-size:18px;color:#556;margin-top:8px}
+.box .seenbtn{margin-top:22px;font-size:26px;font-weight:800;padding:16px 44px;border-radius:12px;border:0;background:#2e7d32;color:#fff;cursor:pointer}
+#more{margin-top:14px;font-size:16px;color:#d32f2f;font-weight:700}
+@media(max-width:700px){.box{padding:20px 16px}.box h2{font-size:28px}.box .pname{font-size:26px}.box .prices b{font-size:38px}}
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN / FIRST SETUP ============ -->
+<section id="auth" class="hidden">
+  <div class="card authcard">
+    <h1>COST ALERT</h1>
+    <div class="muted" id="shopName"></div>
+    <div id="setupNote" class="note hidden">First-time setup: create the ADMIN login for yourself.</div>
+    <label for="lname">Name</label><input id="lname" autocomplete="username">
+    <label for="lpass">Password</label><input id="lpass" type="password" autocomplete="current-password">
+    <button class="btn dark wide" id="lbtn">Log in</button>
+    <div id="lmsg" class="msg up"></div>
+  </div>
+</section>
+
+<!-- ============ ADMIN ============ -->
+<section id="admin" class="hidden">
+  <div class="top">
+    <div><b>UPDATE COST</b><small id="who1"></small></div>
+    <div class="r"><span id="net1" class="hidden">● Offline — retrying…</span>
+      <button class="btn y" id="toBoard">Board view</button><button class="btn g" data-logout>Log out</button></div>
+  </div>
+  <main class="grid">
+    <section class="card">
+      <label for="code">Barcode / Code (scan or type, press Enter)</label><input id="code" autocomplete="off">
+      <label for="pname">Product name</label><input id="pname" list="plist" autocomplete="off"><datalist id="plist"></datalist>
+      <div class="row2">
+        <div><label for="old">Old cost (QAR)</label><input id="old" type="number" step="0.01" inputmode="decimal"></div>
+        <div><label for="new">New cost (QAR)</label><input id="new" type="number" step="0.01" inputmode="decimal"></div>
+      </div>
+      <div id="diff"></div>
+      <label for="supplier">Supplier (optional)</label><input id="supplier">
+      <label for="note">Note (optional)</label><input id="note">
+      <button class="btn dark wide" id="save">SAVE &amp; ALERT STAFF</button>
+      <div id="msg" class="msg"></div>
+    </section>
+    <section class="card">
+      <b>Recent changes</b> <span class="muted">— last 7 days · who pressed SEEN updates by itself</span>
+      <div class="tw"><table><thead><tr><th>When</th><th>Product</th><th>Cost</th><th>Seen by</th><th></th></tr></thead>
+      <tbody id="list"></tbody></table></div>
+    </section>
+    <section class="card span">
+      <b>Logins</b> <span class="muted">— add staff here. Same name again = change password or role.</span>
+      <div class="tw"><table><thead><tr><th>Name</th><th>Role</th><th></th></tr></thead><tbody id="ulist"></tbody></table></div>
+      <div class="userform" style="margin-top:12px">
+        <div><label for="uname">Name</label><input id="uname" autocomplete="off"></div>
+        <div><label for="upass">Password (min 4)</label><input id="upass" type="password" autocomplete="new-password"></div>
+        <div><label for="urole">Role</label><select id="urole"><option value="staff">Staff</option><option value="admin">Admin</option></select></div>
+        <button class="btn dark" id="usave">Save login</button>
+      </div>
+      <div id="umsg" class="msg"></div>
+    </section>
+  </main>
+</section>
+
+<!-- ============ BOARD (staff) ============ -->
+<section id="board" class="hidden">
+  <header class="bhead">
+    <div><h1>COST CHANGES</h1><small id="who2"></small><div id="net2" class="hidden">● No internet / server not reachable — retrying…</div></div>
+    <div class="bright"><div id="clock"></div>
+      <div class="r"><button class="btn y hidden" id="toAdmin">Admin</button><button class="btn g" data-logout>Log out</button></div></div>
+  </header>
+  <main id="blist"></main>
+</section>
+<div id="start" class="hidden"><button>▶ START BOARD</button><p>Tap once so the alert sound can play</p></div>
+<div id="pop"><div class="box" id="box"></div></div>
+
+<script>
+/* ===================== SETTINGS ===================== */
+const SUPABASE_URL = "https://gsjdwsbcinfuluoffcah.supabase.co";   // e.g. https://abcd1234.supabase.co
+const SUPABASE_KEY = "sb_publishable_ggkvoNUwNfRT6ET5T5fOkw_zlarg8-p";   // publishable / anon key (safe to put here)
+const SHOP = "Muhammed Bu Matar Trading";
+const REPEAT_BEEP_SECONDS = 20;            // beep again while a change is not confirmed
+/* ==================================================== */
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const f2=n=>Number(n).toFixed(2);
+const hm=s=>{if(!s)return"";const h=+s.slice(11,13),m=s.slice(14,16);return(h%12||12)+":"+m+(h<12?" AM":" PM");};
+const store={
+  get(){try{return JSON.parse(localStorage.getItem("ca_session")||"null")}catch(e){return null}},
+  set(v){try{localStorage.setItem("ca_session",JSON.stringify(v))}catch(e){}},
+  clear(){try{localStorage.removeItem("ca_session")}catch(e){}}
+};
+let S=store.get(), setupMode=false, timers=[], products=[];
+let rows=[], today="", started=false, ctx=null, shown=null, lastBeep=0;
+
+/* ---------- server calls ---------- */
+async function rpc(fn,args={}){
+  const h={"Content-Type":"application/json","apikey":SUPABASE_KEY};
+  if(SUPABASE_KEY.startsWith("eyJ"))h.Authorization="Bearer "+SUPABASE_KEY;
+  let r;
+  try{r=await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`,{method:"POST",headers:h,body:JSON.stringify(args),cache:"no-store"});}
+  catch(e){const err=new Error("No internet / server not reachable");err.net=true;throw err;}
+  const text=await r.text();let j=null;try{j=text?JSON.parse(text):null}catch(e){}
+  if(!r.ok){
+    const m=(j&&(j.message||j.error))||("Server error "+r.status);
+    if(String(m).includes("SESSION_EXPIRED")){logout(true);}
+    throw new Error(m);
+  }
+  return j;
+}
+const T=()=>({p_token:S&&S.token});
+
+/* ---------- screens ---------- */
+function stopTimers(){timers.forEach(clearInterval);timers=[];}
+function hideAll(){["auth","admin","board","start"].forEach(id=>$(id).classList.add("hidden"));$("pop").style.display="none";}
+function showAuth(setup,message){
+  stopTimers();hideAll();document.body.classList.remove("dark");
+  setupMode=!!setup;
+  $("auth").classList.remove("hidden");
+  $("shopName").textContent=SHOP;
+  $("setupNote").classList.toggle("hidden",!setupMode);
+  $("lbtn").textContent=setupMode?"Create admin login":"Log in";
+  $("lpass").setAttribute("autocomplete",setupMode?"new-password":"current-password");
+  $("lmsg").textContent=message||"";
+  setTimeout(()=>$("lname").focus(),50);
+}
+function go(mode){
+  stopTimers();hideAll();shown=null;
+  const admin=S.role==="admin";
+  if(mode==="admin"&&admin){
+    document.body.classList.remove("dark");
+    $("admin").classList.remove("hidden");
+    $("who1").textContent=`${SHOP} · ${S.name} (admin)`;
+    loadProducts();loadList();loadUsers();
+    timers.push(setInterval(loadList,5000));
+    setTimeout(()=>$("code").focus(),50);
+  }else{
+    document.body.classList.add("dark");
+    $("board").classList.remove("hidden");
+    $("who2").textContent=`${SHOP} · ${S.name}`;
+    $("toAdmin").classList.toggle("hidden",!admin);
+    if(!admin&&!started)$("start").classList.remove("hidden");
+    poll();timers.push(setInterval(poll,3000));
+  }
+}
+async function boot(){
+  if(SUPABASE_URL.startsWith("__")||SUPABASE_KEY.startsWith("__")){
+    showAuth(false,"Setup needed: put the Supabase URL and key at the top of this file.");return;
+  }
+  if(S&&S.token){go(S.role==="admin"?"admin":"board");return;}
+  try{showAuth(!(await rpc("ca_has_users")));}
+  catch(e){showAuth(false,e.net?"Can't reach the server. Check internet — and if this opened inside an app preview (Claude, WhatsApp, Files), open it in Chrome or Safari instead.":e.message);}
+}
+async function doLogin(){
+  const name=$("lname").value.trim(),pin=$("lpass").value;
+  if(!name||!pin){$("lmsg").textContent="Enter name and password";return;}
+  $("lbtn").disabled=true;
+  try{
+    const j=await rpc(setupMode?"ca_setup":"ca_login",{p_name:name,p_pin:pin});
+    if(!j||j.error)throw new Error((j&&j.error)||"Login failed");
+    S={token:j.token,name:j.name,role:j.role};store.set(S);$("lpass").value="";$("lmsg").textContent="";
+    go(S.role==="admin"?"admin":"board");
+  }catch(e){$("lmsg").textContent=e.message;}
+  $("lbtn").disabled=false;
+}
+function logout(expired){
+  const t=S&&S.token;S=null;store.clear();
+  if(t&&!expired)rpc("ca_logout",{p_token:t}).catch(()=>{});
+  showAuth(false,expired?"Session ended — please log in again":"");
+}
+$("lbtn").onclick=doLogin;
+$("lpass").addEventListener("keydown",e=>{if(e.key==="Enter")doLogin();});
+$("lname").addEventListener("keydown",e=>{if(e.key==="Enter")$("lpass").focus();});
+document.querySelectorAll("[data-logout]").forEach(b=>b.onclick=()=>{if(confirm("Log out?"))logout(false);});
+$("toBoard").onclick=()=>go("board");
+$("toAdmin").onclick=()=>go("admin");
+
+/* ---------- admin: update cost ---------- */
+function amsg(t,c){$("msg").textContent=t;$("msg").className="msg "+(c||"");}
+async function loadProducts(){
+  try{
+    products=await rpc("ca_products",T());
+    $("plist").innerHTML=products.map(p=>`<option value="${esc(p.name)}">${esc(p.code||"")} · last ${f2(p.new_cost)}</option>`).join("");
+  }catch(e){}
+}
+function fill(p){
+  if(!p||!p.name)return;
+  if(p.code)$("code").value=p.code;
+  $("pname").value=p.name;$("old").value=p.new_cost;showDiff();$("new").focus();
+}
+async function lookup(){
+  const s=$("code").value.trim();if(!s)return;
+  try{const p=await rpc("ca_lookup",{...T(),p_q:s});if(p&&p.name)fill(p);else $("pname").focus();}
+  catch(e){amsg(e.message,"up");}
+}
+$("code").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();lookup();}});
+$("pname").addEventListener("change",()=>{const p=products.find(x=>x.name===$("pname").value);if(p)fill(p);});
+function showDiff(){
+  const o=parseFloat($("old").value),n=parseFloat($("new").value),d=$("diff");
+  if(isNaN(o)||isNaN(n)){d.textContent="";d.className="";return;}
+  const x=n-o,pct=o?x/o*100:0;
+  d.className=x>0?"up":x<0?"down":"";
+  d.textContent=x===0?"No change":`${x>0?"▲ +":"▼ "}${f2(x)} QAR  (${x>0?"+":""}${pct.toFixed(1)}%)`;
+}
+["old","new"].forEach(i=>$(i).addEventListener("input",showDiff));
+$("new").addEventListener("keydown",e=>{if(e.key==="Enter")save();});
+$("save").onclick=save;
+async function save(){
+  const name=$("pname").value.trim(),nv=$("new").value,ov=$("old").value;
+  if(!name){amsg("Enter the product name","up");$("pname").focus();return;}
+  if(nv===""){amsg("Enter the new cost","up");$("new").focus();return;}
+  $("save").disabled=true;
+  try{
+    await rpc("ca_add",{...T(),p_code:$("code").value.trim(),p_name:name,p_old:ov===""?null:Number(ov),
+      p_new:Number(nv),p_supplier:$("supplier").value.trim(),p_note:$("note").value.trim()});
+    amsg("✓ Saved — staff screens are being alerted","ok");
+    ["code","pname","old","new","supplier","note"].forEach(i=>$(i).value="");showDiff();$("code").focus();
+    loadList();loadProducts();
+  }catch(e){amsg("✗ "+e.message,"up");}
+  $("save").disabled=false;
+}
+async function loadList(){
+  try{
+    const j=await rpc("ca_feed",{...T(),p_days:7});
+    $("net1").classList.add("hidden");
+    $("list").innerHTML=j.rows.map(r=>{
+      const c=r.old_cost==null?"":r.new_cost>r.old_cost?"up":r.new_cost<r.old_cost?"down":"";
+      const day=r.changed_at.slice(0,10)===j.today?"Today":r.changed_at.slice(8,10)+"/"+r.changed_at.slice(5,7);
+      const seen=r.seen.length?r.seen.map(s=>`<span class="ok">✓ ${esc(s.by)}</span> <span class="muted">${hm(s.at)}</span>`).join("<br>"):`<span class="wait">Waiting…</span>`;
+      return `<tr><td>${day}<br><span class="muted">${hm(r.changed_at)}</span></td>
+        <td><b>${esc(r.name)}</b><br><span class="muted">${esc(r.code)}${r.supplier?" · "+esc(r.supplier):""}${r.note?" · "+esc(r.note):""}</span></td>
+        <td>${r.old_cost!=null?`<span class="old">${f2(r.old_cost)}</span> → `:""}<b class="${c}">${f2(r.new_cost)}</b></td>
+        <td>${seen}</td>
+        <td><button class="del" title="Delete (mistake only)" data-del="${r.id}">✕</button></td></tr>`;
+    }).join("")||`<tr><td colspan="5" class="muted">No changes yet</td></tr>`;
+  }catch(e){if(e.net)$("net1").classList.remove("hidden");}
+}
+$("list").addEventListener("click",async e=>{
+  const b=e.target.closest("[data-del]");if(!b)return;
+  if(!confirm("Delete this entry? Use only for mistakes."))return;
+  try{await rpc("ca_delete",{...T(),p_id:Number(b.dataset.del)});loadList();loadProducts();}catch(err){amsg(err.message,"up");}
+});
+
+/* ---------- admin: logins ---------- */
+function umsg(t,c){$("umsg").textContent=t;$("umsg").className="msg "+(c||"");}
+async function loadUsers(){
+  try{
+    const us=await rpc("ca_users_list",T());
+    $("ulist").innerHTML=us.map(u=>`<tr><td><b>${esc(u.name)}</b>${u.name.toLowerCase()===S.name.toLowerCase()?' <span class="muted">(you)</span>':""}</td>
+      <td>${u.role==="admin"?"Admin":"Staff"}</td>
+      <td>${u.name.toLowerCase()===S.name.toLowerCase()?"":`<button class="del" title="Remove login" data-uid="${u.id}" data-uname="${esc(u.name)}">✕</button>`}</td></tr>`).join("");
+  }catch(e){umsg(e.message,"up");}
+}
+$("usave").onclick=async()=>{
+  const name=$("uname").value.trim(),pin=$("upass").value,role=$("urole").value;
+  if(!name){umsg("Enter a name","up");return;}
+  $("usave").disabled=true;
+  try{
+    await rpc("ca_user_save",{...T(),p_name:name,p_pin:pin,p_role:role});
+    umsg(`✓ Login saved for ${name}`,"ok");$("uname").value="";$("upass").value="";loadUsers();
+  }catch(e){umsg("✗ "+e.message,"up");}
+  $("usave").disabled=false;
+};
+$("ulist").addEventListener("click",async e=>{
+  const b=e.target.closest("[data-uid]");if(!b)return;
+  if(!confirm(`Remove login for ${b.dataset.uname}?`))return;
+  try{await rpc("ca_user_remove",{...T(),p_id:Number(b.dataset.uid)});umsg("✓ Removed","ok");loadUsers();}catch(err){umsg("✗ "+err.message,"up");}
+});
+
+/* ---------- board + alert ---------- */
+function beep(){
+  if(!ctx)return;
+  try{
+    if(ctx.state==="suspended")ctx.resume();
+    const t=ctx.currentTime;
+    [[0,880],[0.22,660],[0.44,880],[0.66,660]].forEach(([o,f])=>{
+      const osc=ctx.createOscillator(),g=ctx.createGain();
+      osc.type="square";osc.frequency.value=f;
+      g.gain.setValueAtTime(0.25,t+o);g.gain.exponentialRampToValueAtTime(0.001,t+o+0.2);
+      osc.connect(g).connect(ctx.destination);osc.start(t+o);osc.stop(t+o+0.21);
+    });
+  }catch(e){}
+  lastBeep=Date.now();
+}
+$("start").onclick=()=>{
+  try{ctx=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}
+  $("start").classList.add("hidden");started=true;
+  const el=document.documentElement;
+  if(el.requestFullscreen)el.requestFullscreen().catch(()=>{});
+  render();
+};
+const cls=r=>r.old_cost==null?"":r.new_cost>r.old_cost?"up":r.new_cost<r.old_cost?"down":"";
+function diffHtml(r){
+  if(r.old_cost==null)return"new item";
+  const d=r.new_cost-r.old_cost,p=r.old_cost?d/r.old_cost*100:0;
+  if(d===0)return"no change";
+  return `<span class="${d>0?"up":"down"}">${d>0?"▲ +":"▼ "}${f2(d)} QAR (${d>0?"+":""}${p.toFixed(1)}%)</span>`;
+}
+function itemHtml(r,isToday){
+  const c=cls(r),seen=r.seen.map(s=>s.by).join(", ");
+  return `<div class="item ${isToday?"today":"yday"} ${r.me_seen||S.role==="admin"?"":"unseen"}">
+    <div><div class="name">${esc(r.name)}</div>
+      <div class="code">${r.code?"Code "+esc(r.code):""}${r.supplier?" · "+esc(r.supplier):""}</div></div>
+    <div class="price">${r.old_cost!=null?`<span class="old">${f2(r.old_cost)}</span>`:""}<span class="new ${c}">${f2(r.new_cost)}</span>
+      <span class="arrow ${c}">${c==="up"?"▲":c==="down"?"▼":""}</span></div>
+    <div class="meta"><span>${diffHtml(r)}${r.note?" · "+esc(r.note):""}</span>
+      <span>${hm(r.changed_at)}${seen?" · ✓ "+esc(seen):""}</span></div></div>`;
+}
+function render(){
+  const t=rows.filter(r=>r.changed_at.slice(0,10)===today),y=rows.filter(r=>r.changed_at.slice(0,10)!==today);
+  let h=`<div class="sec">Today</div>`+(t.length?t.map(r=>itemHtml(r,true)).join(""):`<div class="empty">No cost changes today</div>`);
+  if(y.length)h+=`<div class="sec">Yesterday</div>`+y.map(r=>itemHtml(r,false)).join("");
+  $("blist").innerHTML=h;
+  popup();
+}
+function popup(){
+  const staff=S&&S.role!=="admin";
+  const unseen=rows.filter(r=>!r.me_seen).sort((a,b)=>a.id-b.id);
+  if(!staff||!started||!unseen.length){$("pop").style.display="none";shown=null;return;}
+  const r=unseen[0];
+  if(shown!==r.id){
+    shown=r.id;
+    $("box").innerHTML=`<h2>⚠ COST CHANGED</h2>
+      <div class="pname">${esc(r.name)}</div><div class="pcode">${r.code?"Code "+esc(r.code):""}</div>
+      <div class="prices">${r.old_cost!=null?`<span class="old" style="font-size:30px">${f2(r.old_cost)}</span> → `:""}<b class="${cls(r)}">${f2(r.new_cost)} QAR</b></div>
+      <div class="d">${diffHtml(r)}</div>
+      ${(r.supplier||r.note)?`<div class="n">${esc([r.supplier,r.note].filter(Boolean).join(" · "))}</div>`:""}
+      <div class="n">Changed at ${hm(r.changed_at)}</div>
+      <button class="seenbtn" id="seenBtn">✓ SEEN</button>
+      <div id="more"></div>`;
+    beep();
+  }
+  $("more").textContent=unseen.length>1?`+${unseen.length-1} more change(s) waiting`:"";
+  $("pop").style.display="flex";
+  if(Date.now()-lastBeep>REPEAT_BEEP_SECONDS*1000)beep();
+}
+$("box").addEventListener("click",async e=>{
+  if(!e.target.closest("#seenBtn")||!shown)return;
+  const id=shown;e.target.disabled=true;
+  try{await rpc("ca_seen",{...T(),p_id:id});}catch(err){}
+  const r=rows.find(x=>x.id===id);if(r){r.me_seen=true;r.seen.push({by:S.name,at:""});}
+  shown=null;render();
+});
+async function poll(){
+  try{
+    const j=await rpc("ca_feed",{...T(),p_days:2});
+    rows=j.rows;today=j.today;$("net2").classList.add("hidden");render();
+  }catch(e){if(e.net)$("net2").classList.remove("hidden");}
+}
+function tick(){
+  const d=new Date();
+  $("clock").innerHTML=d.toLocaleDateString("en-GB",{weekday:"short",day:"2-digit",month:"short",year:"numeric"})+
+    "<br>"+d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
+}
+tick();setInterval(tick,10000);
+boot();
+</script>
+</body>
+</html>
