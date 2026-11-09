@@ -100,6 +100,7 @@ td{border-bottom:1px solid #eef0f4;padding:8px 6px;vertical-align:top}
 .box .n{font-size:18px;color:#556;margin-top:8px}
 .box .seenbtn{margin-top:22px;font-size:26px;font-weight:800;padding:16px 44px;border-radius:12px;border:0;background:#2e7d32;color:#fff;cursor:pointer}
 #more{margin-top:14px;font-size:16px;color:#d32f2f;font-weight:700}
+#upd{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:30;background:var(--yellow);color:var(--ink);font-weight:800;font-size:16px;padding:12px 20px;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.35);cursor:pointer;max-width:calc(100% - 32px);text-align:center}
 @media(max-width:700px){.box{padding:20px 16px}.box h2{font-size:28px}.box .pname{font-size:26px}.box .prices b{font-size:38px}}
 </style>
 </head>
@@ -115,13 +116,14 @@ td{border-bottom:1px solid #eef0f4;padding:8px 6px;vertical-align:top}
     <label for="lpass">Password</label><input id="lpass" type="password" autocomplete="current-password">
     <button class="btn dark wide" id="lbtn">Log in</button>
     <div id="lmsg" class="msg up"></div>
+    <div class="muted ver" style="margin-top:10px;text-align:right"></div>
   </div>
 </section>
 
 <!-- ============ ADMIN ============ -->
 <section id="admin" class="hidden">
   <div class="top">
-    <div><b>UPDATE COST</b><small id="who1"></small></div>
+    <div><b>UPDATE COST</b> <small class="ver" style="display:inline"></small><small id="who1"></small></div>
     <div class="r"><span id="net1" class="hidden">● Offline — retrying…</span>
       <button class="btn y" id="toBoard">Board view</button><button class="btn g" data-logout>Log out</button></div>
   </div>
@@ -161,7 +163,7 @@ td{border-bottom:1px solid #eef0f4;padding:8px 6px;vertical-align:top}
 <!-- ============ BOARD (staff) ============ -->
 <section id="board" class="hidden">
   <header class="bhead">
-    <div><h1>COST CHANGES</h1><small id="who2"></small><div id="net2" class="hidden">● No internet / server not reachable — retrying…</div></div>
+    <div><h1>COST CHANGES</h1><small id="who2"></small> <small class="ver"></small><div id="net2" class="hidden">● No internet / server not reachable — retrying…</div></div>
     <div class="bright"><div id="clock"></div>
       <div class="r"><button class="btn y hidden" id="toAdmin">Admin</button><button class="btn g" data-logout>Log out</button></div></div>
   </header>
@@ -169,9 +171,11 @@ td{border-bottom:1px solid #eef0f4;padding:8px 6px;vertical-align:top}
 </section>
 <div id="start" class="hidden"><button>▶ START BOARD</button><p>Tap once — you will hear the alarm once as a sound check. Turn the PC volume up.</p></div>
 <div id="pop"><div class="box" id="box"></div></div>
+<div id="upd" class="hidden"></div>
 
 <script>
 /* ===================== SETTINGS ===================== */
+const APP_VERSION = "1.1.0";               // bump this AND version.json on every release
 const SUPABASE_URL = "https://gsjdwsbcinfuluoffcah.supabase.co";   // e.g. https://abcd1234.supabase.co
 const SUPABASE_KEY = "sb_publishable_ggkvoNUwNfRT6ET5T5fOkw_zlarg8-p";   // publishable / anon key (safe to put here)
 const SHOP = "Muhammed Bu Matar Trading";
@@ -473,6 +477,22 @@ function tick(){
   $("clock").innerHTML=d.toLocaleDateString("en-GB",{weekday:"short",day:"2-digit",month:"short",year:"numeric"})+
     "<br>"+d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
 }
+/* ---------- version + update notice ---------- */
+document.querySelectorAll(".ver").forEach(e=>e.textContent="v"+APP_VERSION);
+async function checkUpdate(){
+  if(!location.protocol.startsWith("http"))return;   // only when opened from the website link
+  try{
+    const r=await fetch("version.json?ts="+Date.now(),{cache:"no-store"});if(!r.ok)return;
+    const j=await r.json();
+    if(j.version&&j.version!==APP_VERSION){
+      $("upd").textContent=`New version v${j.version} available — tap to update`;
+      $("upd").classList.remove("hidden");
+    }
+  }catch(e){}
+}
+$("upd").onclick=()=>location.reload();
+checkUpdate();setInterval(checkUpdate,5*60*1000);
+
 tick();setInterval(tick,10000);
 boot();
 </script>
