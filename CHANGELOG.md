@@ -2,6 +2,19 @@
 
 All notable changes to Cost Alert. Versions follow `MAJOR.MINOR.PATCH`.
 
+## v1.5.0 — 2026-11-10
+### Added
+- **Sound on/off switch** on the staff board. Tap to turn the siren off, tap again to turn it on (plays a short test alarm).
+  - A muted screen **turns its sound back on by itself after 30 minutes** (`MUTE_MINUTES` in `index.html`), so a forgotten mute can't hide a change.
+  - The button shows when sound comes back ("Sound off · back on 9:07 PM"), and the alert says "Alarm sound is off until …".
+  - While muted, Windows notifications are silent too. The mute stays through a reload.
+  - Keyboard and screen-reader friendly (`role="switch"`).
+
+### Changed
+- **Simpler, louder alert.** One red pulsing screen with just four things: "COST CHANGED" tag, product name, giant new price (old price struck through beside it) with the up/down chip, and one big **SEEN** button.
+  - Removed the hazard stripes, the white card, the header bar, the price box and its labels, and the "changed by" line. The time moved next to the code.
+  - Every colour pair still passes WCAG AA across the whole pulse.
+
 ## v1.4.0 — 2026-11-10
 ### Added
 - **Windows notifications** for every cost change. They pop up over every app (the sales software too), even with Chrome minimised, and stay on screen until someone answers.

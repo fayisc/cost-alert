@@ -226,6 +226,13 @@ select.input{appearance:none;padding-right:44px;cursor:pointer;
 .tool.on{background:var(--down-tint);color:var(--ok);border-color:transparent}
 .tool.warn{background:var(--brand);color:var(--on-brand);border-color:transparent}
 .tool.off{background:var(--up-tint);color:var(--danger);border-color:transparent}
+/* on/off switch inside the sound button */
+.tool .sw{position:relative;flex:none;width:36px;height:20px;margin-left:var(--sp-1);border-radius:var(--r-full);background:var(--border-input);
+  transition:background-color var(--dur-fast)}
+.tool .sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;
+  transition:transform var(--dur-fast) var(--ease-out)}
+.tool[aria-checked="true"] .sw{background:var(--ok)}
+.tool[aria-checked="true"] .sw::after{transform:translateX(16px)}
 #notifHelp{margin-top:var(--sp-3)}
 .section-h{display:flex;align-items:center;gap:var(--sp-3);margin:var(--sp-6) 0 var(--sp-3);font-size:var(--fs-14);font-weight:700;
   letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted)}
@@ -295,50 +302,42 @@ select.input{appearance:none;padding-right:44px;cursor:pointer;
 .start-tips li{display:flex;align-items:center;gap:var(--sp-2);justify-content:center}
 .start-tips .icon{color:var(--ok);width:18px;height:18px}
 
-/* ---------- ALERT (the one loud thing) ---------- */
-.alert{position:fixed;inset:0;z-index:var(--z-alert);display:none;padding:var(--sp-7) var(--gutter);overflow:auto;background:var(--a-scrim)}
+/* ---------- ALERT: one simple, loud screen — label, product, giant price, one button ---------- */
+.alert{--ring:#FFFFFF;--a-soft:#FECACA;position:fixed;inset:0;z-index:var(--z-alert);display:none;overflow:auto;
+  padding:var(--sp-6) var(--gutter);background:var(--a-scrim);color:#fff}
 .alert.open{display:flex}
-/* red pulse: 0.67 flashes per second, far below the WCAG 2.3.1 limit of 3 per second */
+/* red pulse: 0.67 cycles per second, far below the WCAG 2.3.1 limit of 3 flashes per second */
 .alert::before{content:"";position:fixed;inset:0;background:var(--a-pulse);opacity:.15;animation:alarm .75s ease-in-out infinite alternate;pointer-events:none}
 @keyframes alarm{to{opacity:.85}}
-.hazard{position:fixed;left:0;right:0;height:16px;z-index:2;
-  background:repeating-linear-gradient(-45deg,var(--brand) 0 20px,#0F172A 20px 40px)}
-.hazard.top{top:0} .hazard.bottom{bottom:0}
-/* scales up on big screens/TVs so it reads from across the shop */
-.alert-card{--ring:#0F172A;position:relative;z-index:1;margin:auto;width:min(clamp(760px,54vw,1080px),100%);overflow:hidden;
-  background:var(--a-surface);color:var(--a-text);border-radius:var(--r-xl);box-shadow:var(--shadow-3);
-  animation:alert-in var(--dur-base) var(--ease-out)}
+.alert :focus-visible{outline-offset:4px}
+.alert-card{position:relative;z-index:1;margin:auto;width:min(1100px,100%);display:flex;flex-direction:column;align-items:center;
+  gap:var(--sp-4);text-align:center;animation:alert-in var(--dur-base) var(--ease-out)}
 @keyframes alert-in{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
-.alert-head{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3);padding:var(--sp-4) var(--sp-6);background:var(--brand);color:var(--on-brand)}
-.alert-title{display:flex;align-items:center;gap:var(--sp-3);font-size:clamp(1.5rem,2.2vw,2.5rem);font-weight:800;letter-spacing:.02em;text-transform:uppercase;line-height:1.1}
-.alert-title .icon{width:36px;height:36px;stroke-width:2.5}
-.alert-count{padding:var(--sp-1) var(--sp-3);border-radius:var(--r-full);background:var(--on-brand);color:var(--brand);font-size:var(--fs-16);font-weight:800;white-space:nowrap}
-.alert-body{padding:var(--sp-6)}
-.a-name{font-size:clamp(2rem,3.4vw,3.75rem);font-weight:800;line-height:1.1;letter-spacing:-.02em;overflow-wrap:anywhere}
-.a-meta{margin-top:var(--sp-2);font-size:var(--fs-18);color:var(--a-muted)}
-.a-prices{display:grid;grid-template-columns:auto auto 1fr;align-items:end;gap:var(--sp-5);margin:var(--sp-5) 0 var(--sp-4);
-  padding:var(--sp-5);background:var(--a-panel);border:1px solid var(--a-line);border-radius:var(--r-lg)}
-.a-label{margin-bottom:var(--sp-1);font-size:var(--fs-14);font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--a-muted)}
-.a-old{font-size:clamp(1.75rem,3.6vw,2.5rem);font-weight:700;line-height:1;color:var(--a-old);text-decoration:line-through;text-decoration-thickness:3px}
-.a-arrow{align-self:center;color:var(--a-muted)} .a-arrow .icon{width:36px;height:36px}
-.a-new{font-size:clamp(3.5rem,7vw,7.5rem);font-weight:800;line-height:.95;letter-spacing:-.03em;color:var(--a-text)}
-.a-new.t-up{color:var(--a-up)} .a-new.t-down{color:var(--a-down)}
-.alert .delta{min-height:44px;padding:0 var(--sp-4);font-size:var(--fs-20);font-weight:800}
+.alert-tag{display:inline-flex;align-items:center;gap:var(--sp-2);padding:var(--sp-2) var(--sp-4);border-radius:var(--r-full);
+  background:rgba(0,0,0,.3);font-size:var(--fs-18);font-weight:800;letter-spacing:.08em;text-transform:uppercase;line-height:1.2}
+.alert-tag .icon{width:24px;height:24px;stroke-width:2.5;color:var(--brand)}
+.alert-count{margin-left:var(--sp-1);padding-left:var(--sp-3);border-left:1px solid rgba(255,255,255,.4);font-weight:700;letter-spacing:0;text-transform:none}
+.a-name{font-size:clamp(2rem,5vw,4.5rem);font-weight:800;line-height:1.05;letter-spacing:-.02em;overflow-wrap:anywhere}
+.a-meta{font-size:var(--fs-18);color:var(--a-soft)}
+.a-price{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:var(--sp-2) var(--sp-5);margin-top:var(--sp-2)}
+.a-old{font-size:clamp(1.5rem,3.4vw,3rem);font-weight:700;color:var(--a-soft);text-decoration:line-through;text-decoration-thickness:3px}
+.a-arrow{display:inline-flex;color:var(--a-soft)} .a-arrow .icon{width:clamp(28px,3vw,48px);height:clamp(28px,3vw,48px)}
+.a-new{font-size:clamp(4rem,12vw,10rem);font-weight:800;line-height:.9;letter-spacing:-.04em}
+.a-cur{margin-left:var(--sp-2);font-size:clamp(1rem,2vw,1.5rem);font-weight:700;letter-spacing:0;color:var(--a-soft)}
+.alert .delta{min-height:48px;padding:0 var(--sp-5);font-size:var(--fs-20);font-weight:800;background:#fff}
 .alert .delta .icon{width:22px;height:22px}
-.alert .delta.d-up{background:var(--a-up-tint);color:var(--a-up-ink)}
-.alert .delta.d-down{background:var(--a-down-tint);color:var(--a-down-ink)}
-.alert .delta.d-flat{background:var(--a-panel);color:var(--a-muted)}
-.a-note{display:flex;gap:var(--sp-2);align-items:flex-start;margin-top:var(--sp-4);padding:var(--sp-3) var(--sp-4);border-radius:var(--r-md);
-  background:var(--a-panel);font-size:var(--fs-18);color:var(--a-text)}
-.a-note .icon{margin-top:3px;color:var(--a-muted)}
-.a-foot{margin-top:var(--sp-4);font-size:var(--fs-16);color:var(--a-muted)}
-.seen-btn{display:flex;align-items:center;justify-content:center;gap:var(--sp-3);width:100%;min-height:var(--target-xl);margin-top:var(--sp-5);
-  border:0;border-radius:var(--r-lg);background:var(--a-confirm);color:#fff;font-size:var(--fs-24);font-weight:800;letter-spacing:.01em;
-  transition:background-color var(--dur-fast),transform var(--dur-fast)}
-.seen-btn:hover:not(:disabled){background:var(--a-confirm-hover)}
-.seen-btn:active:not(:disabled){transform:scale(.99)}
-.seen-btn:disabled{opacity:.6;cursor:progress}
-.seen-btn .icon{width:32px;height:32px;stroke-width:2.5}
+.alert .delta.d-up{color:var(--a-up-ink)} .alert .delta.d-down{color:var(--a-down-ink)} .alert .delta.d-flat{color:var(--a-text)}
+.a-note{max-width:60ch;font-size:var(--fs-18);color:var(--a-soft)}
+.a-muted{display:inline-flex;align-items:center;gap:var(--sp-2);padding:var(--sp-2) var(--sp-4);border-radius:var(--r-full);
+  background:rgba(0,0,0,.3);font-size:var(--fs-16);font-weight:700}
+.a-muted .icon{color:var(--brand)}
+.seen-btn{display:flex;align-items:center;justify-content:center;gap:var(--sp-3);width:min(560px,100%);min-height:80px;margin-top:var(--sp-4);
+  border:0;border-radius:var(--r-xl);background:#fff;color:var(--a-up-ink);font-size:var(--fs-32);font-weight:800;letter-spacing:.06em;
+  text-transform:uppercase;box-shadow:0 12px 32px rgba(0,0,0,.35);transition:background-color var(--dur-fast),transform var(--dur-fast)}
+.seen-btn:hover:not(:disabled){background:#FEF2F2}
+.seen-btn:active:not(:disabled){transform:scale(.98)}
+.seen-btn:disabled{opacity:.7;cursor:progress}
+.seen-btn .icon{width:36px;height:36px;stroke-width:3}
 
 /* ---------- toast ---------- */
 .toast{position:fixed;left:50%;bottom:max(var(--sp-4),env(safe-area-inset-bottom));transform:translateX(-50%);z-index:var(--z-toast);
@@ -375,13 +374,11 @@ select.input{appearance:none;padding-right:44px;cursor:pointer;
   .table td[data-label]::before{content:attr(data-label);display:block;font-size:var(--fs-12);font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted)}
   .td-act{position:absolute;top:var(--sp-2);right:0;width:auto;padding:0!important}
   .user-form{grid-template-columns:1fr}
-  .alert{padding:var(--sp-6) var(--sp-3)}
-  .alert-head{padding:var(--sp-3) var(--sp-4)}
-  .alert-title{font-size:var(--fs-20);letter-spacing:0} .alert-title .icon{width:26px;height:26px}
-  .alert-body{padding:var(--sp-4)}
-  .a-prices{grid-template-columns:1fr;gap:var(--sp-3);padding:var(--sp-4)}
-  .a-arrow{display:none}
-  .seen-btn{font-size:var(--fs-20)}
+  .alert{padding:var(--sp-5) var(--sp-4)}
+  .alert-card{gap:var(--sp-3)}
+  .alert-tag{font-size:var(--fs-14)} .alert-tag .icon{width:20px;height:20px}
+  .a-meta,.a-note{font-size:var(--fs-16)}
+  .seen-btn{min-height:72px;font-size:var(--fs-24)}
   .start-title{font-size:var(--fs-32)}
 }
 @media (max-width:479px){
@@ -536,7 +533,7 @@ select.input{appearance:none;padding-right:44px;cursor:pointer;
       <div class="toolbar-right">
         <div class="stats" id="stats"></div>
         <div class="tools hidden" id="tools">
-          <button class="tool" id="soundBtn" type="button" title="Play a test alarm"></button>
+          <button class="tool" id="soundBtn" type="button" role="switch" aria-checked="false"></button>
           <button class="tool hidden" id="notifBtn" type="button"></button>
         </div>
       </div>
@@ -578,9 +575,7 @@ select.input{appearance:none;padding-right:44px;cursor:pointer;
 
 <!-- alert -->
 <div id="pop" class="alert" role="alertdialog" aria-modal="true" aria-labelledby="alertTitle" aria-describedby="alertDesc">
-  <div class="hazard top" aria-hidden="true"></div>
   <div class="alert-card" id="alertCard"></div>
-  <div class="hazard bottom" aria-hidden="true"></div>
 </div>
 
 <div id="upd" class="toast hidden" role="status">
@@ -590,11 +585,12 @@ select.input{appearance:none;padding-right:44px;cursor:pointer;
 
 <script>
 /* ===================== SETTINGS ===================== */
-const APP_VERSION = "1.4.0";               // bump this AND version.json on every release
+const APP_VERSION = "1.5.0";               // bump this AND version.json on every release
 const SUPABASE_URL = "https://gsjdwsbcinfuluoffcah.supabase.co";
 const SUPABASE_KEY = "sb_publishable_ggkvoNUwNfRT6ET5T5fOkw_zlarg8-p";   // publishable key (safe to publish)
 const SHOP = "Muhammed Bu Matar Trading";
 const REPEAT_BEEP_SECONDS = 10;            // sound the alarm again while a change is not confirmed
+const MUTE_MINUTES = 30;                   // a muted screen switches its alarm sound back on by itself after this
 /* ==================================================== */
 
 const $=id=>document.getElementById(id);
@@ -847,6 +843,7 @@ $("ulist").addEventListener("click",async e=>{
 /* ---------- board + alert ---------- */
 function beep(){
   // Loud siren: 3 x "wee-woo" sweeps (~1.8 s), two harsh detuned tones pushed through a compressor
+  if(isMuted()){lastBeep=Date.now();return;}   // staff switched the sound off (comes back on by itself)
   if(ctx){
     try{
       if(ctx.state==="suspended")ctx.resume();
@@ -941,30 +938,29 @@ function popup(){
   const r=unseen[0],k=dir(r);
   if(shown!==r.id){
     shown=r.id;
-    const meta=[r.code&&`Code <span class="num">${esc(r.code)}</span>`,r.supplier&&esc(r.supplier)].filter(Boolean).join(" · ");
+    const meta=[r.code&&`<span class="num">${esc(r.code)}</span>`,r.supplier&&esc(r.supplier),`<span class="num">${hm(r.changed_at)}</span>`].filter(Boolean).join(" · ");
     $("alertCard").innerHTML=`
-      <div class="alert-head"><h2 class="alert-title" id="alertTitle">${ic("alert")}Cost changed</h2><span class="alert-count num hidden" id="alertCount"></span></div>
-      <div class="alert-body">
-        <div id="alertDesc">
-          <p class="a-name">${esc(r.name)}</p>
-          ${meta?`<p class="a-meta">${meta}</p>`:""}
-          <div class="a-prices">
-            <div><div class="a-label">Old cost</div><div class="a-old num">${r.old_cost!=null?f2(r.old_cost):"—"}</div></div>
-            <div class="a-arrow" aria-hidden="true">${ic("arrow-right")}</div>
-            <div><div class="a-label">New cost (QAR)</div><div class="a-new num ${tcls(k)}">${f2(r.new_cost)}</div></div>
-          </div>
-          <div>${deltaChip(r)}</div>
-          ${r.note?`<p class="a-note">${ic("note")}<span>${esc(r.note)}</span></p>`:""}
-          <p class="a-foot">Changed at <span class="num">${hm(r.changed_at)}</span>${r.changed_by?` by ${esc(r.changed_by)}`:""}</p>
+      <h2 class="alert-tag" id="alertTitle">${ic("alert")}Cost changed<span class="alert-count num hidden" id="alertCount"></span></h2>
+      <div id="alertDesc" style="display:contents">
+        <p class="a-name">${esc(r.name)}</p>
+        <p class="a-meta">${meta}</p>
+        <div class="a-price">
+          ${r.old_cost!=null?`<span class="a-old num"><span class="sr-only">Was </span>${f2(r.old_cost)}</span><span class="a-arrow" aria-hidden="true">${ic("arrow-right")}</span>`:""}
+          <span class="a-new num"><span class="sr-only">Now </span>${f2(r.new_cost)}<span class="a-cur">QAR</span></span>
         </div>
-        <button class="seen-btn" id="seenBtn" type="button">${ic("check")}Seen — I understand</button>
-      </div>`;
+        ${deltaChip(r)}
+        ${r.note?`<p class="a-note">“${esc(r.note)}”</p>`:""}
+      </div>
+      <button class="seen-btn" id="seenBtn" type="button">${ic("check")}Seen</button>
+      <p class="a-muted hidden" id="alertMuted"></p>`;
     $("pop").classList.add("open");document.documentElement.classList.add("alert-open");
     $("board").inert=true;
     beep();
     setTimeout(()=>{const b=$("seenBtn");if(b)b.focus({preventScroll:true});},30);
   }
   const c=$("alertCount");c.textContent=`1 of ${unseen.length}`;c.classList.toggle("hidden",unseen.length<2);
+  const am=$("alertMuted");am.classList.toggle("hidden",!isMuted());
+  if(isMuted())am.innerHTML=`${ic("volume-x")}Alarm sound is off until <span class="num">${muteBackAt()}</span>`;
   if(Date.now()-lastBeep>REPEAT_BEEP_SECONDS*1000)beep();
 }
 $("pop").addEventListener("click",async e=>{
@@ -981,6 +977,7 @@ document.addEventListener("keydown",e=>{
   if(e.key==="Tab"&&$("pop").classList.contains("open")){e.preventDefault();const b=$("seenBtn");if(b)b.focus();}
 });
 async function poll(){
+  checkMute();
   try{
     const j=await rpc("ca_feed",{...T(),p_days:2});
     rows=j.rows;today=j.today;setNet(true);render();
@@ -1007,7 +1004,25 @@ function tryAutoStart(){
 }
 // any tap on the page switches sound back on if Chrome paused it
 document.addEventListener("pointerdown",()=>{if(started&&ctx&&ctx.state!=="running")ensureAudio();});
-$("soundBtn").onclick=()=>{ensureAudio();setTimeout(beep,60);};
+
+/* ---------- sound on/off switch (mute switches itself back on after MUTE_MINUTES) ---------- */
+let muteUntil=0;
+try{muteUntil=Number(localStorage.getItem("ca_mute_until"))||0;}catch(e){}
+const isMuted=()=>muteUntil>Date.now();
+const muteBackAt=()=>new Date(muteUntil).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
+function setMute(on){
+  muteUntil=on?Date.now()+MUTE_MINUTES*60000:0;
+  try{if(on)localStorage.setItem("ca_mute_until",String(muteUntil));else localStorage.removeItem("ca_mute_until");}catch(e){}
+  updateTools();
+  if(!$("pop").classList.contains("open"))return;
+  const am=$("alertMuted");if(am){am.classList.toggle("hidden",!on);if(on)am.innerHTML=`${ic("volume-x")}Alarm sound is off until <span class="num">${muteBackAt()}</span>`;}
+}
+function checkMute(){if(muteUntil&&!isMuted())setMute(false);}   // time is up: sound back on
+$("soundBtn").onclick=()=>{
+  const unlocked=!!ctx&&ctx.state==="running";
+  if(!unlocked||isMuted()){ensureAudio();setMute(false);setTimeout(beep,60);}   // ON: plays a short test alarm
+  else setMute(true);                                                           // OFF for MUTE_MINUTES
+};
 
 /* ---------- Windows / desktop notifications ---------- */
 const canNotify=()=>"Notification" in window&&"serviceWorker" in navigator&&location.protocol.startsWith("http");
@@ -1040,7 +1055,7 @@ function notifyChange(r){
   const extra=[r.code&&`Code ${r.code}`,r.supplier,r.note].filter(Boolean).join(" · ");
   if(extra)body+="\n"+extra;
   showNotif(`Cost changed: ${r.name}`,{
-    body,tag:"ca-"+r.id,renotify:true,requireInteraction:true,icon:ICON_ALERT,
+    body,tag:"ca-"+r.id,renotify:true,requireInteraction:true,icon:ICON_ALERT,silent:isMuted(),
     data:{id:r.id,token:S.token,api:SUPABASE_URL,key:SUPABASE_KEY,url:location.href.split("#")[0]},
     actions:[{action:"seen",title:"Seen"},{action:"open",title:"Open board"}]
   }).then(ok=>{if(!ok)notified.delete(r.id);});
@@ -1074,11 +1089,17 @@ function updateTools(){
   const staff=!!S&&S.role!=="admin";
   $("tools").classList.toggle("hidden",!staff);
   if(!staff)return;
-  const on=!!ctx&&ctx.state==="running";
+  const unlocked=!!ctx&&ctx.state==="running",muted=isMuted();
   const sb=$("soundBtn");
-  sb.className="tool "+(on?"on":"warn");
-  sb.innerHTML=on?`${ic("volume")}Sound on`:`${ic("volume-x")}Sound off — tap to turn on`;
-  sb.setAttribute("aria-label",on?"Sound is on. Play a test alarm":"Sound is off. Tap to turn sound on");
+  sb.className="tool "+(!unlocked?"warn":muted?"off":"on");
+  sb.setAttribute("aria-checked",String(unlocked&&!muted));
+  sb.innerHTML=!unlocked?`${ic("volume-x")}Sound off — tap to turn on`
+    :muted?`${ic("volume-x")}<span>Sound off · back on <span class="num">${muteBackAt()}</span></span><span class="sw" aria-hidden="true"></span>`
+    :`${ic("volume")}Sound on<span class="sw" aria-hidden="true"></span>`;
+  const lbl=!unlocked?"Alarm sound is off. Tap to turn it on"
+    :muted?`Alarm sound is off until ${muteBackAt()}. Tap to turn it back on`
+    :`Alarm sound is on. Tap to turn it off for ${MUTE_MINUTES} minutes`;
+  sb.setAttribute("aria-label",lbl);sb.title=lbl;
   const nb=$("notifBtn");
   if(!canNotify()){nb.classList.add("hidden");$("notifHelp").classList.add("hidden");return;}
   const p=Notification.permission;

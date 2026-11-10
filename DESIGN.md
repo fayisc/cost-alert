@@ -1,4 +1,4 @@
-# Cost Alert — Design System (v1.3.0)
+# Cost Alert — Design System (v1.5.0)
 
 A dark **signal board** for a hardware shop counter. The rule behind every decision:
 
@@ -13,12 +13,13 @@ A dark **signal board** for a hardware shop counter. The rule behind every decis
 |---|---|---|
 | Sound | 3 × siren sweep (800→1600 Hz), repeats every 10 s until **Seen** | Works when staff aren't looking at the screen |
 | Colour | Full-screen red scrim, slowly pulsing | Red = stop / warning in every culture |
-| Pattern | Yellow/black hazard stripes top and bottom | Hardware-shop "caution" sign, readable at a glance and not colour-only |
-| Contrast | White card on red (16:1) with 88–120 px new price | Read from across the counter |
+| Simplicity (v1.5) | Only four things on screen: what changed, the product, a giant new price (up to 160 px) with the up/down chip, and one **SEEN** button | One glance from across the counter is enough. Nothing competes with the price |
+| Contrast | White text straight on the red, at least 7.4:1 even at the brightest point of the pulse | Readable at any moment of the pulse |
 | Taskbar | Tab title flashes "⚠ COST CHANGED ⚠", favicon turns red | Visible even when the sales software is in front |
 | Windows notification (v1.4) | Pops over every app, even with Chrome minimised, and stays until answered. **Seen** button confirms and stops the siren. | Staff don't need to switch windows to see or confirm a change |
 | Focus | Keyboard focus lands on **Seen**, Enter confirms | Fast for a cashier with hands on the keyboard |
 | Queue | "1 of 3" counter | Staff know how many are left |
+| Sound switch (v1.5) | Staff can switch the siren off. It switches back on by itself after 30 min, and the alert says "Alarm sound is off until 9:07 PM" | Quiet when needed, but a forgotten mute can't hide a change |
 
 **Flash safety:** the pulse runs at 0.67 cycles/s, well below the WCAG 2.3.1 limit of 3 flashes per second.
 With *reduced motion* switched on in the OS, the pulse stops and a static red is shown.
@@ -35,8 +36,9 @@ With *reduced motion* switched on in the OS, the pulse stops and a static red is
 | `--brand` / `--on-brand` | `#FBBF24` / `#0F172A` | Primary actions, brand mark, "New" / "Current" tags |
 | `--up` | `#F87171` | Cost **up** (bad for margin) |
 | `--down` | `#4ADE80` | Cost **down** |
-| `--a-up` / `--a-down` | `#B91C1C` / `#15803D` | Up / down on the white alert card |
-| `--a-confirm` | `#15803D` | **Seen** button |
+| `--a-scrim` / `--a-pulse` | `#450A0A` / `#B91C1C` | Alert background and its pulse |
+| `--a-soft` | `#FECACA` | Secondary text on the alert (old cost, code, note) |
+| `--a-up-ink` / `--a-down-ink` | `#991B1B` / `#166534` | **SEEN** button text and up/down chip text on white |
 
 Direction is **never shown by colour alone**: there's always an arrow icon, the word "Up"/"Down" and a +/− sign.
 
@@ -48,9 +50,10 @@ Direction is **never shown by colour alone**: there's always an arrow icon, the 
 | Ink on amber (buttons, alert header) | 10.69 | 4.5 |
 | Up red on card | 6.45 | 4.5 |
 | Down green on card | 10.25 | 4.5 |
-| Old cost (struck) on white | 4.76 | 4.5 |
-| Up price on white | 6.47 | 4.5 |
-| White on **Seen** green | 5.02 | 4.5 |
+| Alert: white text on red (darkest → brightest pulse) | 7.45 or more | 4.5 |
+| Alert: soft text `#FECACA` on red | 5.15 or more | 4.5 |
+| **SEEN** button text / up chip on white | 8.31 | 4.5 |
+| Down chip on white | 7.13 | 4.5 |
 | Input border on input surface | 3.07 | 3.0 |
 | Amber focus ring on background | 12.08 | 3.0 |
 
@@ -59,9 +62,9 @@ Direction is **never shown by colour alone**: there's always an arrow icon, the 
 
 | Role | Size | Weight |
 |---|---|---|
-| Alert new price | clamp(56 px, 7vw, 120 px) | 800 |
+| Alert new price | clamp(64 px, 12vw, 160 px) | 800 |
 | Board new price | clamp(36 px, 3.6vw, 56 px) | 800 |
-| Alert product name | clamp(32 px, 3.4vw, 60 px) | 800 |
+| Alert product name | clamp(32 px, 5vw, 72 px) | 800 |
 | Board product name | clamp(24 px, 2.4vw, 36 px) | 800 |
 | Section / card title | 20 px | 700 |
 | Body / inputs | 16 px (never smaller on phones → no iOS zoom) | 400–600 |
@@ -76,9 +79,10 @@ Sizes are in `rem`, so browser zoom and system text size still work.
 - **Z-index:** header 10 · alert 100 · start screen 200 · toast 300.
 
 ## 5. Touch & interaction
-- Every control is at least **48 × 48 px** (Material). The **Seen** and **Start board** buttons are 72 px tall.
+- Every control is at least **48 × 48 px** (Material). **SEEN** is 80 px tall (72 px on phones), **Start board** 72 px.
 - Controls are at least 8 px apart.
-- Visible 3 px amber focus ring (dark ink on the white alert card).
+- Visible 3 px focus ring: amber on the board, white on the red alert.
+- The sound button is a real switch (`role="switch"`, `aria-checked`), with an on/off track you can see.
 - Buttons show a spinner and are disabled while saving.
 - Press feedback is `scale(.98)`, so the layout never shifts.
 - Deleting asks for confirmation. Delete is a red icon button, separate from the primary action.
@@ -99,7 +103,7 @@ Decorative icons are `aria-hidden`. Icon-only buttons have an `aria-label`.
 ## 8. Responsive
 Breakpoints: **375 · 768 · 1024 · 1440**, with the alert scaled for **1920** TVs.
 - **< 1024 px:** admin becomes one column.
-- **< 768 px:** buttons become icon-only (still labelled for screen readers), tables become stacked cards, board rows drop the direction badge (the colour bar and arrow chip carry direction), and the alert stacks old/new price.
+- **< 768 px:** buttons become icon-only (still labelled for screen readers), tables become stacked cards, board rows drop the direction badge (the colour bar and arrow chip carry direction), and the alert wraps the old price above the new one.
 - **< 480 px:** the in-app clock is hidden (phones show the time already).
 - No horizontal scrolling at 375 px (checked automatically).
 - Landscape phones can scroll to **Seen**.
@@ -110,7 +114,7 @@ Breakpoints: **375 · 768 · 1024 · 1440**, with the alert scaled for **1920** 
 - Status messages use `aria-live`. Login errors use `role="alert"`.
 - Every input has a visible label, required fields are marked `*`, and the password field has a show/hide toggle.
 
-## 10. Pre-delivery checklist (v1.3.0)
+## 10. Pre-delivery checklist (v1.5.0)
 - [x] Contrast measured, all text ≥ 4.5:1
 - [x] Touch targets ≥ 48 px, automated check passed on every screen
 - [x] No horizontal scroll at 375 px
