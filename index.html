@@ -2,221 +2,581 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#020617">
 <title>Cost Alert</title>
+<link id="fav" rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
 <!--
-  COST CHANGE ALERT (online)  -  Muhammed Bu Matar Trading
-  One link for everyone, works on any Wi-Fi / any office / phone.
-  Admin login  -> update costs, see who confirmed, manage staff logins.
-  Staff login  -> full-screen board, beep + pop-up until they press SEEN.
-  Only setting: SUPABASE_URL and SUPABASE_KEY in the <script> below.
+  COST ALERT  -  Muhammed Bu Matar Trading
+  Admin login -> update costs, see who confirmed, manage staff logins.
+  Staff login -> full-screen board, siren + alert until they press SEEN, Recent search.
+  Design system: see DESIGN.md (tokens below are the single source of truth).
 -->
 <style>
-:root{--ink:#1d2330;--muted:#6b7385;--line:#e3e6ec;--bg:#f4f5f7;--card:#fff;--yellow:#ffd54a;--up:#c62828;--down:#2e7d32}
-*{box-sizing:border-box}
-html,body{margin:0;min-height:100%}
-body{font-family:"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--ink)}
-body.dark{background:#12161f;color:#eef1f6}
+/* =====================================================================
+   DESIGN TOKENS  (dark "signal board"; every colour pair measured to WCAG AA)
+   ===================================================================== */
+:root{
+  color-scheme:dark;
+  /* surfaces */
+  --bg:#020617; --surface:#0F172A; --surface-2:#1E293B; --surface-3:#273449;
+  --border:#334155;            /* decorative dividers */
+  --border-input:#64748B;      /* control boundaries: 3.07:1 on surface-2 */
+  /* text */
+  --text:#F8FAFC; --text-2:#CBD5E1; --text-muted:#94A3B8;
+  /* brand / attention */
+  --brand:#FBBF24; --brand-hover:#F59E0B; --on-brand:#0F172A; --brand-tint:rgba(251,191,36,.14);
+  /* semantic: cost up = bad for margin (red), cost down = good (green) */
+  --up:#F87171; --up-tint:rgba(248,113,113,.14);
+  --down:#4ADE80; --down-tint:rgba(74,222,128,.14);
+  --ok:#4ADE80; --danger:#F87171;
+  --ring:#FBBF24;
+  /* alert card (light, maximum contrast against the red scrim) */
+  --a-surface:#FFFFFF; --a-panel:#F8FAFC; --a-line:#E2E8F0;
+  --a-text:#0F172A; --a-muted:#475569; --a-old:#64748B;
+  --a-up:#B91C1C; --a-up-tint:#FEF2F2; --a-up-ink:#991B1B;
+  --a-down:#15803D; --a-down-tint:#F0FDF4; --a-down-ink:#166534;
+  --a-confirm:#15803D; --a-confirm-hover:#166534;
+  --a-scrim:#450A0A; --a-pulse:#B91C1C;
+  /* type: Inter, rem-based scale so browser zoom / text size works */
+  --font:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --fs-12:.75rem; --fs-14:.875rem; --fs-16:1rem; --fs-18:1.125rem; --fs-20:1.25rem;
+  --fs-24:1.5rem; --fs-32:2rem; --fs-40:2.5rem;
+  /* spacing: 4/8-pt grid */
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:24px; --sp-6:32px; --sp-7:48px; --sp-8:64px;
+  --gutter:clamp(16px,3vw,32px);
+  /* shape + depth */
+  --r-sm:8px; --r-md:12px; --r-lg:16px; --r-xl:24px; --r-full:999px;
+  --shadow-2:0 8px 24px rgba(0,0,0,.45); --shadow-3:0 24px 64px rgba(0,0,0,.6);
+  /* touch targets */
+  --target:48px; --target-lg:64px; --target-xl:72px;
+  /* motion */
+  --dur-fast:150ms; --dur-base:250ms; --ease-out:cubic-bezier(.2,.8,.2,1);
+  /* layers */
+  --z-header:10; --z-alert:100; --z-start:200; --z-toast:300;
+}
+
+/* ---------- base ---------- */
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+html.alert-open{overflow:hidden}
+body{margin:0;min-height:100dvh;background:var(--bg);color:var(--text);font-family:var(--font);
+  font-size:var(--fs-16);line-height:1.5;-webkit-font-smoothing:antialiased}
+h1,h2,h3,p{margin:0}
+.num{font-variant-numeric:tabular-nums}
 .hidden{display:none!important}
-.btn{border:0;border-radius:8px;padding:9px 14px;font-weight:700;cursor:pointer;font-size:14px;font-family:inherit}
-.btn:disabled{opacity:.5;cursor:default}
-.btn.y{background:var(--yellow);color:var(--ink)}
-.btn.g{background:#2b3346;color:#fff}
-.btn.dark{background:var(--ink);color:#fff}
-.btn.wide{width:100%;padding:13px;font-size:18px;margin-top:16px}
-.up{color:var(--up)}.down{color:var(--down)}.ok{color:var(--down);font-weight:600}
-.muted{color:var(--muted);font-size:12px}
-.msg{margin-top:10px;font-weight:600;min-height:22px}
-label{display:block;font-size:13px;font-weight:600;color:#556;margin:12px 0 4px}
-input,select{width:100%;padding:10px 12px;font-size:17px;border:1px solid #cdd2dc;border-radius:7px;font-family:inherit;background:#fff;color:var(--ink)}
-input:focus,select:focus{outline:2px solid #3b82f6;border-color:#3b82f6}
-.card{background:var(--card);border-radius:10px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.08);min-width:0}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.icon{width:1.25em;height:1.25em;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.25em}
+:focus-visible{outline:3px solid var(--ring);outline-offset:2px}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;touch-action:manipulation}
+.t-up{color:var(--up)} .t-down{color:var(--down)}
 
-/* login */
-#auth{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
-.authcard{width:min(400px,100%)}
-.authcard h1{margin:0;font-size:26px;letter-spacing:1px}
-.note{background:#fff4c2;border-radius:8px;padding:10px 12px;margin-top:12px;font-weight:600}
+/* ---------- buttons ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--sp-2);min-height:var(--target);
+  padding:0 var(--sp-5);border:1px solid transparent;border-radius:var(--r-md);font-size:var(--fs-16);
+  font-weight:700;line-height:1;white-space:nowrap;text-decoration:none;
+  transition:background-color var(--dur-fast) var(--ease-out),border-color var(--dur-fast),transform var(--dur-fast)}
+.btn:active:not(:disabled){transform:scale(.98)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-primary{background:var(--brand);color:var(--on-brand)}
+.btn-primary:hover:not(:disabled){background:var(--brand-hover)}
+.btn-secondary{background:var(--surface-2);color:var(--text);border-color:var(--border-input)}
+.btn-secondary:hover:not(:disabled){background:var(--surface-3)}
+.btn-ghost{background:transparent;color:var(--text-2)}
+.btn-ghost:hover{background:var(--surface-2);color:var(--text)}
+.btn-lg{min-height:56px;font-size:var(--fs-18)}
+.btn-block{width:100%}
+.icon-btn{display:inline-grid;place-items:center;width:var(--target);height:var(--target);padding:0;border:0;
+  border-radius:var(--r-md);background:transparent;color:var(--text-2);transition:background-color var(--dur-fast)}
+.icon-btn:hover{background:var(--surface-2)}
+.icon-btn.danger{color:var(--danger)}
+.icon-btn.danger:hover{background:var(--up-tint)}
+.spinner{width:18px;height:18px;border-radius:50%;border:2.5px solid currentColor;border-right-color:transparent;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 
-/* admin */
-.top{background:var(--ink);color:#fff;padding:12px 18px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
-.top small{display:block;color:#9aa4b8;font-weight:400}
-.top .r{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-#net1{color:#ff8a80;font-size:13px}
-.grid{max-width:1100px;margin:0 auto;padding:20px;display:grid;grid-template-columns:minmax(280px,380px) 1fr;gap:20px}
-.span{grid-column:1/-1}
-@media(max-width:800px){.grid{grid-template-columns:1fr;padding:14px}}
-.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-#diff{margin-top:12px;font-size:20px;font-weight:700;min-height:28px}
-.tw{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:14px;margin-top:8px}
-th{text-align:left;color:#667;font-weight:600;border-bottom:2px solid var(--line);padding:8px 6px}
-td{border-bottom:1px solid #eef0f4;padding:8px 6px;vertical-align:top}
-.old{text-decoration:line-through;opacity:.55}
-.wait{color:#e65100;font-weight:600}
-.del{background:none;border:0;color:#b00;cursor:pointer;font-size:16px}
-.userform{display:grid;grid-template-columns:1fr 1fr 140px auto;gap:10px;align-items:end}
-.userform .btn{height:44px}
-@media(max-width:700px){.userform{grid-template-columns:1fr 1fr}}
+/* ---------- form controls ---------- */
+.field{display:flex;flex-direction:column;gap:var(--sp-2);min-width:0}
+.label{font-size:var(--fs-14);font-weight:600;color:var(--text-2)}
+.req{color:var(--brand)} .opt{font-weight:500;color:var(--text-muted)}
+.hint{font-size:var(--fs-14);color:var(--text-muted)}
+.input{width:100%;min-height:var(--target);padding:0 var(--sp-4);font-size:var(--fs-16);color:var(--text);
+  background:var(--surface-2);border:1px solid var(--border-input);border-radius:var(--r-md);
+  transition:border-color var(--dur-fast)}
+.input::placeholder{color:var(--text-muted)}
+.input:hover{border-color:var(--text-muted)}
+.input:focus-visible{outline:3px solid var(--ring);outline-offset:1px;border-color:var(--brand)}
+select.input{appearance:none;padding-right:44px;cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 14px center;background-size:20px}
+.input-xl{min-height:var(--target-lg);font-size:var(--fs-20)}
+.input-wrap{position:relative}
+.input-wrap>.icon{position:absolute;left:var(--sp-4);top:50%;transform:translateY(-50%);color:var(--text-muted);pointer-events:none}
+.input-wrap>.icon+.input{padding-left:48px}
+.reveal{position:absolute;right:2px;top:50%;transform:translateY(-50%);width:44px;height:44px;display:grid;place-items:center;
+  border:0;border-radius:var(--r-sm);background:transparent;color:var(--text-muted)}
+.reveal:hover{color:var(--text)}
+.reveal-wrap .input{padding-right:52px}
+.msg{display:flex;align-items:center;gap:var(--sp-2);min-height:24px;font-size:var(--fs-14);font-weight:600}
+.msg:empty{display:none}
+.msg.ok{color:var(--ok)} .msg.err{color:var(--danger)}
 
-/* board */
-.bhead{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 28px;background:#1b2130;border-bottom:4px solid var(--yellow)}
-.bhead h1{margin:0;font-size:32px;letter-spacing:1px}
-.bhead small{color:#9aa4b8;font-size:15px}
-.bright{text-align:right}
-.bright .r{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}
-#clock{font-size:22px;font-weight:600}
-#net2{font-size:15px;color:#ff6b6b;margin-top:4px}
-#blist{padding:12px 28px 28px}
-.sec{font-size:16px;color:#9aa4b8;letter-spacing:3px;margin:20px 0 10px;text-transform:uppercase}
-.item{display:grid;grid-template-columns:1fr auto;gap:6px 24px;align-items:center;padding:16px 22px;border-radius:12px;margin-bottom:12px}
-.today{background:#fff4c2;color:var(--ink)}
-.today.unseen{background:#ffe082}
-.yday{background:#1f2533;color:#aab3c5;opacity:.65}
-.name{font-size:34px;font-weight:800;line-height:1.15;word-break:break-word}
-.code{font-size:17px;opacity:.75}
-.price{text-align:right;white-space:nowrap}
-.price .old{font-size:24px;margin-right:10px}
-.new{font-size:46px;font-weight:800}
-.arrow{font-size:34px}
-.item .up{color:#d32f2f}.item .down{color:#2e7d32}
-.yday .up{color:#ff8a80}.yday .down{color:#81c784}
-.meta{grid-column:1/-1;display:flex;justify-content:space-between;gap:12px;font-size:17px;opacity:.85}
-.empty{font-size:28px;color:#6f7a90;text-align:center;padding:50px 0}
-.tabs{display:flex;gap:8px;padding:14px 28px 0}
-.tab{background:#1f2533;color:#aab3c5;border:0;border-radius:10px;padding:10px 26px;font-size:18px;font-weight:800;cursor:pointer;font-family:inherit}
-.tab.active{background:var(--yellow);color:var(--ink)}
-#recent{padding:16px 28px 28px}
-.searchbar{display:flex;gap:10px}
-.searchbar input{font-size:22px;padding:14px 16px;background:#1f2533;color:#eef1f6;border:2px solid #2b3346;border-radius:10px}
-.searchbar input::placeholder{color:#6f7a90}
-.searchbar .btn{font-size:18px;padding:0 24px}
-.qinfo{color:#9aa4b8;margin:14px 0 10px;font-size:15px}
-.rrow{display:grid;grid-template-columns:110px 1fr auto;gap:6px 18px;align-items:center;padding:14px 18px;border-radius:10px;background:#1b2130;margin-bottom:10px}
-.rrow.latest{border-left:5px solid var(--yellow)}
-.rdate{color:#9aa4b8;font-size:15px;line-height:1.4}
-.rname{font-size:22px;font-weight:800;word-break:break-word}
-.rcode{font-size:14px;color:#9aa4b8}
-.rtag{display:inline-block;background:var(--yellow);color:var(--ink);font-size:11px;font-weight:800;padding:2px 7px;border-radius:5px;margin-left:8px;vertical-align:middle;letter-spacing:.5px}
-.rprice{text-align:right;white-space:nowrap}
-.rprice .old{font-size:18px;margin-right:6px}
-.rnew{font-size:28px;font-weight:800}
-.rdiff{font-size:14px}
-.rrow .up{color:#ff6b6b}.rrow .down{color:#66bb6a}
-@media(max-width:700px){.tabs,#recent{padding-left:16px;padding-right:16px}.rrow{grid-template-columns:1fr}.rprice{text-align:left}.searchbar input{font-size:18px}}
-@media(max-width:700px){.bhead,#blist{padding-left:16px;padding-right:16px}.bhead h1{font-size:24px}.item{grid-template-columns:1fr}.price{text-align:left}.name{font-size:26px}.new{font-size:36px}.meta{flex-direction:column;gap:2px}}
+/* ---------- chips / badges ---------- */
+.chip{display:inline-flex;align-items:center;gap:var(--sp-1);min-height:24px;padding:0 var(--sp-2);border-radius:var(--r-full);
+  font-size:var(--fs-12);font-weight:700;white-space:nowrap;vertical-align:middle}
+.chip .icon{width:14px;height:14px}
+.chip-caps{text-transform:uppercase;letter-spacing:.06em}
+.chip-brand{background:var(--brand);color:var(--on-brand)}
+.chip-neutral{background:var(--surface-2);color:var(--text-2)}
+.chip-ok{background:var(--down-tint);color:var(--ok)}
+.chip-wait{background:var(--brand-tint);color:var(--brand)}
+.chips{display:flex;flex-wrap:wrap;gap:var(--sp-1)}
+.delta{display:inline-flex;align-items:center;gap:var(--sp-2);min-height:32px;padding:0 var(--sp-3);border-radius:var(--r-full);
+  font-size:var(--fs-14);font-weight:700;white-space:nowrap}
+.delta .icon{width:16px;height:16px}
+.delta.d-up{background:var(--up-tint);color:var(--up)}
+.delta.d-down{background:var(--down-tint);color:var(--down)}
+.delta.d-flat{background:var(--surface-2);color:var(--text-2)}
+.delta-pct{opacity:.85}
 
-#start{position:fixed;inset:0;background:#12161f;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;z-index:20;padding:16px;text-align:center}
-#start button{font-size:32px;padding:22px 48px;border-radius:14px;border:0;background:var(--yellow);color:var(--ink);font-weight:800;cursor:pointer}
-#start p{color:#9aa4b8;font-size:18px}
-#pop{position:fixed;inset:0;background:rgba(0,0,0,.78);display:none;align-items:center;justify-content:center;z-index:10;padding:16px}
-.box{background:#fff;color:var(--ink);border-radius:18px;width:min(740px,100%);padding:28px 30px;text-align:center;border:8px solid #d32f2f;animation:pulse .8s infinite alternate}
-@keyframes pulse{to{border-color:var(--yellow)}}
-.box h2{margin:0 0 6px;font-size:40px;color:#d32f2f;letter-spacing:1px}
-.box .pname{font-size:38px;font-weight:800;margin:10px 0 2px;word-break:break-word}
-.box .pcode{font-size:18px;color:#667}
-.box .prices{font-size:30px;margin:18px 0 6px}
-.box .prices b{font-size:52px}
-.box .d{font-size:24px;font-weight:700}
-.box .n{font-size:18px;color:#556;margin-top:8px}
-.box .seenbtn{margin-top:22px;font-size:26px;font-weight:800;padding:16px 44px;border-radius:12px;border:0;background:#2e7d32;color:#fff;cursor:pointer}
-#more{margin-top:14px;font-size:16px;color:#d32f2f;font-weight:700}
-#upd{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:30;background:var(--yellow);color:var(--ink);font-weight:800;font-size:16px;padding:12px 20px;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.35);cursor:pointer;max-width:calc(100% - 32px);text-align:center}
-@media(max-width:700px){.box{padding:20px 16px}.box h2{font-size:28px}.box .pname{font-size:26px}.box .prices b{font-size:38px}}
+/* ---------- app bar (admin + board) ---------- */
+.appbar{position:sticky;top:0;z-index:var(--z-header);display:flex;align-items:center;justify-content:space-between;gap:var(--sp-4);
+  padding:var(--sp-3) var(--gutter);padding-top:max(var(--sp-3),env(safe-area-inset-top));
+  background:var(--bg);border-bottom:1px solid var(--border)}
+.brand{display:flex;align-items:center;gap:var(--sp-3);min-width:0}
+.brand-mark{display:grid;place-items:center;flex:none;width:40px;height:40px;border-radius:var(--r-sm);background:var(--brand);color:var(--on-brand)}
+.brand-mark .icon{width:22px;height:22px}
+.brand-mark.lg{width:52px;height:52px;border-radius:var(--r-md)} .brand-mark.lg .icon{width:28px;height:28px}
+.brand-title{font-size:var(--fs-20);font-weight:800;line-height:1.2;letter-spacing:-.01em}
+.brand-sub{font-size:var(--fs-14);color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand>div{min-width:0}
+.appbar-actions{display:flex;align-items:center;gap:var(--sp-2);flex:none}
+.status{display:inline-flex;align-items:center;gap:var(--sp-2);min-height:32px;padding:0 var(--sp-3);border-radius:var(--r-full);
+  font-size:var(--fs-14);font-weight:600;background:var(--down-tint);color:var(--ok);white-space:nowrap}
+.status .dot{width:8px;height:8px;border-radius:50%;background:currentColor}
+.status.off{background:var(--up-tint);color:var(--danger)}
+.clock{text-align:right;line-height:1.15;padding:0 var(--sp-2)}
+.clock-time{font-size:var(--fs-24);font-weight:700}
+.clock-date{font-size:var(--fs-12);color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em}
+
+/* ---------- login ---------- */
+.auth{min-height:100dvh;display:grid;place-items:center;padding:var(--gutter)}
+.auth-card{width:min(420px,100%);display:flex;flex-direction:column;gap:var(--sp-4);padding:var(--sp-6);
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);box-shadow:var(--shadow-2)}
+.auth-head{display:flex;align-items:center;gap:var(--sp-3);margin-bottom:var(--sp-2)}
+.auth-title{font-size:var(--fs-32);font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.notice{display:flex;gap:var(--sp-3);align-items:flex-start;padding:var(--sp-3) var(--sp-4);border-radius:var(--r-md);
+  background:var(--brand-tint);color:var(--brand);font-size:var(--fs-14);font-weight:600}
+.auth-foot{font-size:var(--fs-12);color:var(--text-muted);text-align:center}
+
+/* ---------- admin ---------- */
+.admin-main{max-width:1280px;margin:0 auto;padding:var(--sp-5) var(--gutter) var(--sp-7);
+  display:grid;grid-template-columns:minmax(320px,400px) minmax(0,1fr);gap:var(--sp-5);align-items:start}
+.card{min-width:0;padding:var(--sp-5);background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg)}
+.card-h{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:var(--sp-1) var(--sp-3);margin-bottom:var(--sp-4)}
+.card-h h2{font-size:var(--fs-20);font-weight:700}
+.span-2{grid-column:1/-1}
+.form{display:grid;gap:var(--sp-4)}
+.row-2{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-3)}
+.diff{min-height:32px;display:flex;align-items:center}
+.diff:empty{display:none}
+.table-wrap{overflow-x:auto}
+.table{width:100%;border-collapse:collapse;font-size:var(--fs-14)}
+.table th{padding:var(--sp-3) var(--sp-2);text-align:left;font-size:var(--fs-12);font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--text-muted);border-bottom:1px solid var(--border);white-space:nowrap}
+.table td{padding:var(--sp-3) var(--sp-2);border-bottom:1px solid var(--border);vertical-align:top}
+.table tbody tr:last-child td{border-bottom:0}
+.table b{font-weight:700;color:var(--text)}
+.td-act{width:56px;text-align:right}
+.table td:first-child{white-space:nowrap}
+.table-mid td{vertical-align:middle;padding-top:var(--sp-2);padding-bottom:var(--sp-2)}
+.cost-old{color:var(--text-muted);text-decoration:line-through;margin-right:var(--sp-1)}
+.cost-new{font-size:var(--fs-18);font-weight:800}
+.cell-stack{display:grid;gap:var(--sp-1)}
+.user-form{display:grid;grid-template-columns:1fr 1fr 160px auto;gap:var(--sp-3);align-items:end;margin-top:var(--sp-4);
+  padding-top:var(--sp-4);border-top:1px solid var(--border)}
+
+/* ---------- board ---------- */
+.board-main{max-width:1440px;margin:0 auto;padding:var(--sp-5) var(--gutter) var(--sp-7)}
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--sp-3) var(--sp-4);margin-bottom:var(--sp-2)}
+.segmented{display:inline-flex;gap:var(--sp-1);padding:var(--sp-1);background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg)}
+.seg{display:inline-flex;align-items:center;gap:var(--sp-2);min-height:var(--target);padding:0 var(--sp-5);border:0;border-radius:var(--r-md);
+  background:transparent;color:var(--text-muted);font-size:var(--fs-18);font-weight:700;transition:background-color var(--dur-fast),color var(--dur-fast)}
+.seg:hover{color:var(--text)}
+.seg[aria-selected="true"]{background:var(--brand);color:var(--on-brand)}
+.seg-count{display:inline-grid;place-items:center;min-width:26px;height:26px;padding:0 var(--sp-2);border-radius:var(--r-full);
+  background:var(--surface-2);color:var(--text);font-size:var(--fs-14);font-weight:700}
+.seg[aria-selected="true"] .seg-count{background:var(--on-brand);color:var(--brand)}
+.stats{display:flex;flex-wrap:wrap;gap:var(--sp-2)}
+.stat{display:inline-flex;align-items:center;gap:var(--sp-2);min-height:36px;padding:0 var(--sp-3);border-radius:var(--r-full);
+  background:var(--surface);border:1px solid var(--border);font-size:var(--fs-14);font-weight:600;color:var(--text-2)}
+.stat .icon{width:16px;height:16px}
+.stat.s-up{color:var(--up)} .stat.s-down{color:var(--down)}
+.section-h{display:flex;align-items:center;gap:var(--sp-3);margin:var(--sp-6) 0 var(--sp-3);font-size:var(--fs-14);font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted)}
+.section-h::after{content:"";flex:1;height:1px;background:var(--border)}
+
+/* change row: calm by default, so the alert is the loudest thing on screen */
+.change{position:relative;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:var(--sp-4) var(--sp-5);
+  margin-bottom:var(--sp-3);padding:var(--sp-5) var(--sp-5) var(--sp-5) calc(var(--sp-5) + 6px);
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+.change::before{content:"";position:absolute;inset:0 auto 0 0;width:6px;background:var(--text-muted)}
+.change[data-dir="up"]::before{background:var(--up)} .change[data-dir="down"]::before{background:var(--down)}
+.change.is-new{border-color:var(--brand);box-shadow:inset 0 0 0 1px var(--brand)}
+.dir-badge{display:grid;place-items:center;width:56px;height:56px;border-radius:var(--r-md);background:var(--surface-2);color:var(--text-2)}
+.dir-badge .icon{width:28px;height:28px}
+.change[data-dir="up"] .dir-badge{background:var(--up-tint);color:var(--up)}
+.change[data-dir="down"] .dir-badge{background:var(--down-tint);color:var(--down)}
+.c-name{font-size:clamp(1.5rem,2.4vw,2.25rem);font-weight:800;line-height:1.15;letter-spacing:-.015em;overflow-wrap:anywhere}
+.c-name .chip{margin-left:var(--sp-2);vertical-align:.35em}
+.c-meta{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-1) var(--sp-4);margin-top:var(--sp-2);font-size:var(--fs-16);color:var(--text-muted)}
+.c-meta>span{display:inline-flex;align-items:center;gap:6px}
+.c-meta .icon{width:16px;height:16px}
+.c-seen{color:var(--ok)}
+.c-note{margin-top:var(--sp-2);font-size:var(--fs-16);color:var(--text-2)}
+.c-price{text-align:right;display:grid;justify-items:end;gap:var(--sp-1)}
+.c-old{font-size:var(--fs-20);font-weight:600;color:var(--text-muted);text-decoration:line-through;text-decoration-thickness:2px}
+.c-new{font-size:clamp(2.25rem,3.6vw,3.5rem);font-weight:800;line-height:1;letter-spacing:-.02em}
+.c-cur{margin-left:6px;font-size:var(--fs-16);font-weight:600;color:var(--text-muted);letter-spacing:0}
+.change.past{padding-top:var(--sp-4);padding-bottom:var(--sp-4);background:transparent}
+.change.past .dir-badge{width:44px;height:44px}
+.change.past .c-name{font-size:var(--fs-24);color:var(--text-2)}
+.change.past .c-new{font-size:var(--fs-32)}
+
+.empty{display:flex;flex-direction:column;align-items:center;gap:var(--sp-2);padding:var(--sp-8) var(--sp-4);text-align:center;
+  border:1px dashed var(--border);border-radius:var(--r-lg);color:var(--text-muted)}
+.empty>.icon{width:40px;height:40px;margin-bottom:var(--sp-2)}
+.empty-title{font-size:var(--fs-24);font-weight:700;color:var(--text)}
+.empty-text{max-width:44ch}
+.app-foot{margin-top:var(--sp-7);text-align:center;font-size:var(--fs-12);color:var(--text-muted)}
+
+/* recent tab */
+.search{display:flex;align-items:flex-end;gap:var(--sp-3);margin-top:var(--sp-5)}
+.search .field{flex:1}
+.search .btn{min-height:var(--target-lg);font-size:var(--fs-18);padding:0 var(--sp-6)}
+.results-info{margin:var(--sp-4) 0 var(--sp-3);font-size:var(--fs-14);color:var(--text-muted)}
+.hist{display:grid;grid-template-columns:120px minmax(0,1fr) auto;align-items:center;gap:var(--sp-2) var(--sp-5);margin-bottom:var(--sp-2);
+  padding:var(--sp-4) var(--sp-5);background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md)}
+.hist.current{border-color:var(--brand);box-shadow:inset 4px 0 0 var(--brand)}
+.h-when{display:grid;font-size:var(--fs-14);color:var(--text-muted);line-height:1.4}
+.h-when b{font-size:var(--fs-16);color:var(--text-2)}
+.h-name{font-size:var(--fs-20);font-weight:700;line-height:1.25;overflow-wrap:anywhere}
+.h-name .chip{margin-left:var(--sp-2)}
+.hist .c-meta{font-size:var(--fs-14);margin-top:var(--sp-1)}
+.h-price{display:grid;justify-items:end;gap:var(--sp-1);text-align:right}
+.h-price .c-old{font-size:var(--fs-16)}
+.h-new{font-size:var(--fs-32);font-weight:800;line-height:1}
+
+/* ---------- start screen ---------- */
+.start{position:fixed;inset:0;z-index:var(--z-start);display:grid;place-items:center;padding:var(--gutter);background:var(--bg);overflow:auto}
+.start-card{display:flex;flex-direction:column;align-items:center;gap:var(--sp-4);max-width:520px;text-align:center}
+.start-icon{display:grid;place-items:center;width:96px;height:96px;border-radius:50%;background:var(--brand-tint);color:var(--brand)}
+.start-icon .icon{width:48px;height:48px}
+.start-title{font-size:var(--fs-40);font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.start-text{font-size:var(--fs-18);color:var(--text-2)}
+.start .btn{min-height:var(--target-xl);margin-top:var(--sp-2);padding:0 var(--sp-7);font-size:var(--fs-24);border-radius:var(--r-lg)}
+.start .btn .icon{width:28px;height:28px}
+.start-tips{display:grid;gap:var(--sp-2);margin:var(--sp-4) 0 0;padding:0;list-style:none;font-size:var(--fs-14);color:var(--text-muted)}
+.start-tips li{display:flex;align-items:center;gap:var(--sp-2);justify-content:center}
+.start-tips .icon{color:var(--ok);width:18px;height:18px}
+
+/* ---------- ALERT (the one loud thing) ---------- */
+.alert{position:fixed;inset:0;z-index:var(--z-alert);display:none;padding:var(--sp-7) var(--gutter);overflow:auto;background:var(--a-scrim)}
+.alert.open{display:flex}
+/* red pulse: 0.67 flashes per second, far below the WCAG 2.3.1 limit of 3 per second */
+.alert::before{content:"";position:fixed;inset:0;background:var(--a-pulse);opacity:.15;animation:alarm .75s ease-in-out infinite alternate;pointer-events:none}
+@keyframes alarm{to{opacity:.85}}
+.hazard{position:fixed;left:0;right:0;height:16px;z-index:2;
+  background:repeating-linear-gradient(-45deg,var(--brand) 0 20px,#0F172A 20px 40px)}
+.hazard.top{top:0} .hazard.bottom{bottom:0}
+/* scales up on big screens/TVs so it reads from across the shop */
+.alert-card{--ring:#0F172A;position:relative;z-index:1;margin:auto;width:min(clamp(760px,54vw,1080px),100%);overflow:hidden;
+  background:var(--a-surface);color:var(--a-text);border-radius:var(--r-xl);box-shadow:var(--shadow-3);
+  animation:alert-in var(--dur-base) var(--ease-out)}
+@keyframes alert-in{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+.alert-head{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3);padding:var(--sp-4) var(--sp-6);background:var(--brand);color:var(--on-brand)}
+.alert-title{display:flex;align-items:center;gap:var(--sp-3);font-size:clamp(1.5rem,2.2vw,2.5rem);font-weight:800;letter-spacing:.02em;text-transform:uppercase;line-height:1.1}
+.alert-title .icon{width:36px;height:36px;stroke-width:2.5}
+.alert-count{padding:var(--sp-1) var(--sp-3);border-radius:var(--r-full);background:var(--on-brand);color:var(--brand);font-size:var(--fs-16);font-weight:800;white-space:nowrap}
+.alert-body{padding:var(--sp-6)}
+.a-name{font-size:clamp(2rem,3.4vw,3.75rem);font-weight:800;line-height:1.1;letter-spacing:-.02em;overflow-wrap:anywhere}
+.a-meta{margin-top:var(--sp-2);font-size:var(--fs-18);color:var(--a-muted)}
+.a-prices{display:grid;grid-template-columns:auto auto 1fr;align-items:end;gap:var(--sp-5);margin:var(--sp-5) 0 var(--sp-4);
+  padding:var(--sp-5);background:var(--a-panel);border:1px solid var(--a-line);border-radius:var(--r-lg)}
+.a-label{margin-bottom:var(--sp-1);font-size:var(--fs-14);font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--a-muted)}
+.a-old{font-size:clamp(1.75rem,3.6vw,2.5rem);font-weight:700;line-height:1;color:var(--a-old);text-decoration:line-through;text-decoration-thickness:3px}
+.a-arrow{align-self:center;color:var(--a-muted)} .a-arrow .icon{width:36px;height:36px}
+.a-new{font-size:clamp(3.5rem,7vw,7.5rem);font-weight:800;line-height:.95;letter-spacing:-.03em;color:var(--a-text)}
+.a-new.t-up{color:var(--a-up)} .a-new.t-down{color:var(--a-down)}
+.alert .delta{min-height:44px;padding:0 var(--sp-4);font-size:var(--fs-20);font-weight:800}
+.alert .delta .icon{width:22px;height:22px}
+.alert .delta.d-up{background:var(--a-up-tint);color:var(--a-up-ink)}
+.alert .delta.d-down{background:var(--a-down-tint);color:var(--a-down-ink)}
+.alert .delta.d-flat{background:var(--a-panel);color:var(--a-muted)}
+.a-note{display:flex;gap:var(--sp-2);align-items:flex-start;margin-top:var(--sp-4);padding:var(--sp-3) var(--sp-4);border-radius:var(--r-md);
+  background:var(--a-panel);font-size:var(--fs-18);color:var(--a-text)}
+.a-note .icon{margin-top:3px;color:var(--a-muted)}
+.a-foot{margin-top:var(--sp-4);font-size:var(--fs-16);color:var(--a-muted)}
+.seen-btn{display:flex;align-items:center;justify-content:center;gap:var(--sp-3);width:100%;min-height:var(--target-xl);margin-top:var(--sp-5);
+  border:0;border-radius:var(--r-lg);background:var(--a-confirm);color:#fff;font-size:var(--fs-24);font-weight:800;letter-spacing:.01em;
+  transition:background-color var(--dur-fast),transform var(--dur-fast)}
+.seen-btn:hover:not(:disabled){background:var(--a-confirm-hover)}
+.seen-btn:active:not(:disabled){transform:scale(.99)}
+.seen-btn:disabled{opacity:.6;cursor:progress}
+.seen-btn .icon{width:32px;height:32px;stroke-width:2.5}
+
+/* ---------- toast ---------- */
+.toast{position:fixed;left:50%;bottom:max(var(--sp-4),env(safe-area-inset-bottom));transform:translateX(-50%);z-index:var(--z-toast);
+  display:flex;align-items:center;gap:var(--sp-3);max-width:calc(100% - 32px);padding:var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-4);
+  background:var(--surface-2);border:1px solid var(--border-input);border-radius:var(--r-lg);box-shadow:var(--shadow-2);font-weight:600;cursor:pointer}
+.toast>span{display:flex;align-items:center;gap:var(--sp-2)}
+
+/* ---------- responsive: 375 / 768 / 1024 / 1440 ---------- */
+@media (max-width:1023px){
+  .admin-main{grid-template-columns:1fr}
+  .user-form{grid-template-columns:1fr 1fr}
+}
+@media (max-width:767px){
+  .btn-label{display:none}
+  .appbar .btn{padding:0;width:var(--target)}
+  .clock-date{display:none}
+  .clock-time{font-size:var(--fs-18)}
+  .status .s-text{display:none}
+  .status{padding:0 var(--sp-2)}
+  .brand-title{font-size:var(--fs-18);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .change{grid-template-columns:minmax(0,1fr);padding:var(--sp-4) var(--sp-4) var(--sp-4) calc(var(--sp-4) + 6px);gap:var(--sp-3)}
+  .dir-badge{display:none}   /* colour bar + arrow chip already carry direction; give the name the full width */
+  .c-price{display:flex;flex-wrap:wrap;align-items:baseline;gap:var(--sp-1) var(--sp-3);text-align:left}
+  .c-price .c-delta{flex-basis:100%}
+  .hist{grid-template-columns:1fr}
+  .h-when{grid-auto-flow:column;justify-content:start;gap:var(--sp-2)}
+  .h-price{justify-items:start;text-align:left}
+  .search{flex-direction:column;align-items:stretch}
+  .table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  .table,.table tbody,.table tr,.table td{display:block;width:100%}
+  .table tr{position:relative;padding:var(--sp-3) 0;border-bottom:1px solid var(--border)}
+  .table tbody tr:last-child{border-bottom:0}
+  .table td{padding:var(--sp-1) 56px var(--sp-1) 0;border:0}
+  .table td[data-label]::before{content:attr(data-label);display:block;font-size:var(--fs-12);font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted)}
+  .td-act{position:absolute;top:var(--sp-2);right:0;width:auto;padding:0!important}
+  .user-form{grid-template-columns:1fr}
+  .alert{padding:var(--sp-6) var(--sp-3)}
+  .alert-head{padding:var(--sp-3) var(--sp-4)}
+  .alert-title{font-size:var(--fs-20);letter-spacing:0} .alert-title .icon{width:26px;height:26px}
+  .alert-body{padding:var(--sp-4)}
+  .a-prices{grid-template-columns:1fr;gap:var(--sp-3);padding:var(--sp-4)}
+  .a-arrow{display:none}
+  .seen-btn{font-size:var(--fs-20)}
+  .start-title{font-size:var(--fs-32)}
+}
+@media (max-width:479px){
+  .clock{display:none}   /* phones already show the time in the status bar */
+  .row-2{grid-template-columns:1fr}
+  .seg{padding:0 var(--sp-4);font-size:var(--fs-16)}
+  .auth-card{padding:var(--sp-5)}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:0ms!important;animation-iteration-count:1!important;transition-duration:0ms!important}
+  .alert::before{opacity:.6}
+}
 </style>
 </head>
 <body>
 
+<!-- Icon sprite (Lucide, ISC licence) — one stroke style everywhere -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-tag" viewBox="0 0 24 24"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+  <symbol id="i-arrow-up" viewBox="0 0 24 24"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></symbol>
+  <symbol id="i-arrow-down" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></symbol>
+  <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-check-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+  <symbol id="i-scan" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M8 7v10"/><path d="M12 7v10"/><path d="M17 7v10"/></symbol>
+  <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></symbol>
+  <symbol id="i-monitor" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></symbol>
+  <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/></symbol>
+  <symbol id="i-activity" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></symbol>
+  <symbol id="i-history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></symbol>
+  <symbol id="i-user-plus" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M22 8c0-2.3-.8-4.3-2-6"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/><path d="M4 2C2.8 3.7 2 5.7 2 8"/></symbol>
+  <symbol id="i-volume" viewBox="0 0 24 24"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><path d="M16 9a5 5 0 0 1 0 6"/><path d="M19.364 18.364a9 9 0 0 0 0-12.728"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M6 3l14 9-14 9z"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></symbol>
+  <symbol id="i-wifi-off" viewBox="0 0 24 24"><path d="M12 20h.01"/><path d="M8.5 16.429a5 5 0 0 1 7 0"/><path d="M5 12.859a10 10 0 0 1 5.17-2.69"/><path d="M19 12.859a10 10 0 0 0-2.007-1.523"/><path d="M2 8.82a15 15 0 0 1 4.177-2.643"/><path d="M22 8.82a15 15 0 0 0-11.288-3.764"/><path d="m2 2 20 20"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></symbol>
+  <symbol id="i-note" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/></symbol>
+</svg>
+
 <!-- ============ LOGIN / FIRST SETUP ============ -->
-<section id="auth" class="hidden">
-  <div class="card authcard">
-    <h1>COST ALERT</h1>
-    <div class="muted" id="shopName"></div>
-    <div id="setupNote" class="note hidden">First-time setup: create the ADMIN login for yourself.</div>
-    <label for="lname">Name</label><input id="lname" autocomplete="username">
-    <label for="lpass">Password</label><input id="lpass" type="password" autocomplete="current-password">
-    <button class="btn dark wide" id="lbtn">Log in</button>
-    <div id="lmsg" class="msg up"></div>
-    <div class="muted ver" style="margin-top:10px;text-align:right"></div>
+<section id="auth" class="auth hidden">
+  <div class="auth-card">
+    <div class="auth-head">
+      <span class="brand-mark lg"><svg class="icon" aria-hidden="true"><use href="#i-tag"/></svg></span>
+      <div><h1 class="auth-title">Cost Alert</h1><p class="hint" id="shopName"></p></div>
+    </div>
+    <div id="setupNote" class="notice hidden"><svg class="icon" aria-hidden="true"><use href="#i-info"/></svg>
+      <span>First-time setup — create the <b>admin</b> login for yourself.</span></div>
+    <div class="field"><label class="label" for="lname">Name</label>
+      <input id="lname" class="input" autocomplete="username" autocapitalize="words"></div>
+    <div class="field"><label class="label" for="lpass">Password</label>
+      <div class="input-wrap reveal-wrap"><input id="lpass" class="input" type="password" autocomplete="current-password">
+        <button type="button" class="reveal" id="lreveal" aria-label="Show password" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-eye"/></svg></button></div></div>
+    <button class="btn btn-primary btn-lg btn-block" id="lbtn">Log in</button>
+    <div id="lmsg" class="msg err" role="alert"></div>
+    <p class="auth-foot">Cost Alert <span class="ver"></span></p>
   </div>
 </section>
 
 <!-- ============ ADMIN ============ -->
 <section id="admin" class="hidden">
-  <div class="top">
-    <div><b>UPDATE COST</b> <small class="ver" style="display:inline"></small><small id="who1"></small></div>
-    <div class="r"><span id="net1" class="hidden">● Offline — retrying…</span>
-      <button class="btn y" id="toBoard">Board view</button><button class="btn g" data-logout>Log out</button></div>
-  </div>
-  <main class="grid">
-    <section class="card">
-      <label for="code">Barcode / Code (scan or type, press Enter)</label><input id="code" autocomplete="off">
-      <label for="pname">Product name</label><input id="pname" list="plist" autocomplete="off"><datalist id="plist"></datalist>
-      <div class="row2">
-        <div><label for="old">Old cost (QAR)</label><input id="old" type="number" step="0.01" inputmode="decimal"></div>
-        <div><label for="new">New cost (QAR)</label><input id="new" type="number" step="0.01" inputmode="decimal"></div>
+  <header class="appbar">
+    <div class="brand">
+      <span class="brand-mark"><svg class="icon" aria-hidden="true"><use href="#i-tag"/></svg></span>
+      <div><h1 class="brand-title">Update cost</h1><div class="brand-sub" id="who1"></div></div>
+    </div>
+    <div class="appbar-actions">
+      <span class="status" id="net1" role="status"><span class="dot"></span><span class="s-text">Live</span></span>
+      <button class="btn btn-secondary" id="toBoard" aria-label="Board view"><svg class="icon" aria-hidden="true"><use href="#i-monitor"/></svg><span class="btn-label">Board view</span></button>
+      <button class="btn btn-ghost" data-logout aria-label="Log out"><svg class="icon" aria-hidden="true"><use href="#i-logout"/></svg><span class="btn-label">Log out</span></button>
+    </div>
+  </header>
+  <main class="admin-main">
+    <section class="card" aria-labelledby="h-new">
+      <div class="card-h"><h2 id="h-new">New cost</h2></div>
+      <div class="form">
+        <div class="field">
+          <label class="label" for="code">Barcode / code</label>
+          <div class="input-wrap"><svg class="icon" aria-hidden="true"><use href="#i-scan"/></svg><input id="code" class="input" autocomplete="off" aria-describedby="code-hint"></div>
+          <p class="hint" id="code-hint">Scan or type, then press Enter — the last saved cost fills in.</p>
+        </div>
+        <div class="field"><label class="label" for="pname">Product name <span class="req" aria-hidden="true">*</span></label>
+          <input id="pname" class="input" list="plist" autocomplete="off" required><datalist id="plist"></datalist></div>
+        <div class="row-2">
+          <div class="field"><label class="label" for="old">Old cost (QAR)</label><input id="old" class="input num" type="number" step="0.01" inputmode="decimal"></div>
+          <div class="field"><label class="label" for="new">New cost (QAR) <span class="req" aria-hidden="true">*</span></label><input id="new" class="input num" type="number" step="0.01" inputmode="decimal" required></div>
+        </div>
+        <div id="diff" class="diff" aria-live="polite"></div>
+        <div class="field"><label class="label" for="supplier">Supplier <span class="opt">(optional)</span></label><input id="supplier" class="input"></div>
+        <div class="field"><label class="label" for="note">Note <span class="opt">(optional)</span></label><input id="note" class="input"></div>
+        <button class="btn btn-primary btn-lg btn-block" id="save" type="button"><svg class="icon" aria-hidden="true"><use href="#i-bell"/></svg>Save &amp; alert staff</button>
+        <div id="msg" class="msg" role="status" aria-live="polite"></div>
       </div>
-      <div id="diff"></div>
-      <label for="supplier">Supplier (optional)</label><input id="supplier">
-      <label for="note">Note (optional)</label><input id="note">
-      <button class="btn dark wide" id="save">SAVE &amp; ALERT STAFF</button>
-      <div id="msg" class="msg"></div>
     </section>
-    <section class="card">
-      <b>Recent changes</b> <span class="muted">— last 7 days · who pressed SEEN updates by itself</span>
-      <div class="tw"><table><thead><tr><th>When</th><th>Product</th><th>Cost</th><th>Seen by</th><th></th></tr></thead>
-      <tbody id="list"></tbody></table></div>
+
+    <section class="card" aria-labelledby="h-recent">
+      <div class="card-h"><h2 id="h-recent">Recent changes</h2><p class="hint">Last 7 days · “Seen by” updates live</p></div>
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>When</th><th>Product</th><th>Cost (QAR)</th><th>Seen by</th><th><span class="sr-only">Actions</span></th></tr></thead>
+        <tbody id="list"></tbody></table></div>
     </section>
-    <section class="card span">
-      <b>Logins</b> <span class="muted">— add staff here. Same name again = change password or role.</span>
-      <div class="tw"><table><thead><tr><th>Name</th><th>Role</th><th></th></tr></thead><tbody id="ulist"></tbody></table></div>
-      <div class="userform" style="margin-top:12px">
-        <div><label for="uname">Name</label><input id="uname" autocomplete="off"></div>
-        <div><label for="upass">Password (min 4)</label><input id="upass" type="password" autocomplete="new-password"></div>
-        <div><label for="urole">Role</label><select id="urole"><option value="staff">Staff</option><option value="admin">Admin</option></select></div>
-        <button class="btn dark" id="usave">Save login</button>
+
+    <section class="card span-2" aria-labelledby="h-users">
+      <div class="card-h"><h2 id="h-users">Logins</h2><p class="hint">Saving an existing name changes its password or role.</p></div>
+      <div class="table-wrap"><table class="table table-mid">
+        <thead><tr><th>Name</th><th>Role</th><th><span class="sr-only">Actions</span></th></tr></thead>
+        <tbody id="ulist"></tbody></table></div>
+      <div class="user-form">
+        <div class="field"><label class="label" for="uname">Name</label><input id="uname" class="input" autocomplete="off"></div>
+        <div class="field"><label class="label" for="upass">Password <span class="opt">(min 4)</span></label><input id="upass" class="input" type="password" autocomplete="new-password"></div>
+        <div class="field"><label class="label" for="urole">Role</label><select id="urole" class="input"><option value="staff">Staff</option><option value="admin">Admin</option></select></div>
+        <button class="btn btn-secondary" id="usave"><svg class="icon" aria-hidden="true"><use href="#i-user-plus"/></svg>Save login</button>
       </div>
-      <div id="umsg" class="msg"></div>
+      <div id="umsg" class="msg" role="status" aria-live="polite" style="margin-top:var(--sp-3)"></div>
     </section>
   </main>
 </section>
 
 <!-- ============ BOARD (staff) ============ -->
 <section id="board" class="hidden">
-  <header class="bhead">
-    <div><h1>COST CHANGES</h1><small id="who2"></small> <small class="ver"></small><div id="net2" class="hidden">● No internet / server not reachable — retrying…</div></div>
-    <div class="bright"><div id="clock"></div>
-      <div class="r"><button class="btn y hidden" id="toAdmin">Admin</button><button class="btn g" data-logout>Log out</button></div></div>
-  </header>
-  <nav class="tabs">
-    <button class="tab active" data-tab="live">Live</button>
-    <button class="tab" data-tab="recent">Recent</button>
-  </nav>
-  <main id="blist"></main>
-  <main id="recent" class="hidden">
-    <div class="searchbar">
-      <input id="q" placeholder="Scan barcode or type name / code" autocomplete="off" enterkeyhint="search">
-      <button class="btn y" id="qbtn">Search</button>
+  <header class="appbar">
+    <div class="brand">
+      <span class="brand-mark"><svg class="icon" aria-hidden="true"><use href="#i-tag"/></svg></span>
+      <div><h1 class="brand-title">Cost changes</h1><div class="brand-sub" id="who2"></div></div>
     </div>
-    <div id="qinfo" class="qinfo"></div>
-    <div id="qres"></div>
+    <div class="appbar-actions">
+      <span class="status" id="net2" role="status"><span class="dot"></span><span class="s-text">Live</span></span>
+      <div class="clock" id="clock" aria-hidden="true"></div>
+      <button class="btn btn-secondary hidden" id="toAdmin" aria-label="Admin"><svg class="icon" aria-hidden="true"><use href="#i-pencil"/></svg><span class="btn-label">Admin</span></button>
+      <button class="btn btn-ghost" data-logout aria-label="Log out"><svg class="icon" aria-hidden="true"><use href="#i-logout"/></svg><span class="btn-label">Log out</span></button>
+    </div>
+  </header>
+  <main class="board-main">
+    <div class="toolbar">
+      <div class="segmented" role="tablist" aria-label="Board views">
+        <button class="seg" role="tab" id="tab-live" data-tab="live" aria-selected="true" aria-controls="blist">
+          <svg class="icon" aria-hidden="true"><use href="#i-activity"/></svg>Live <span class="seg-count num" id="liveCount" aria-label="changes today">0</span></button>
+        <button class="seg" role="tab" id="tab-recent" data-tab="recent" aria-selected="false" aria-controls="recent">
+          <svg class="icon" aria-hidden="true"><use href="#i-history"/></svg>Recent</button>
+      </div>
+      <div class="stats" id="stats"></div>
+    </div>
+    <div id="blist" role="tabpanel" aria-labelledby="tab-live"></div>
+    <div id="recent" role="tabpanel" aria-labelledby="tab-recent" class="hidden">
+      <form class="search" id="qform" role="search">
+        <div class="field">
+          <label class="label" for="q">Search by barcode, code, name or supplier</label>
+          <div class="input-wrap"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>
+            <input id="q" class="input input-xl" type="search" autocomplete="off" enterkeyhint="search" placeholder="e.g. 6291041500213 or laser"></div>
+        </div>
+        <button class="btn btn-primary" id="qbtn" type="submit">Search</button>
+      </form>
+      <p class="results-info" id="qinfo" aria-live="polite"></p>
+      <div id="qres"></div>
+    </div>
+    <p class="app-foot">Cost Alert <span class="ver"></span> · Muhammed Bu Matar Trading</p>
   </main>
 </section>
-<div id="start" class="hidden"><button>▶ START BOARD</button><p>Tap once — you will hear the alarm once as a sound check. Turn the PC volume up.</p></div>
-<div id="pop"><div class="box" id="box"></div></div>
-<div id="upd" class="hidden"></div>
+
+<!-- start screen: unlocks sound (browsers need one tap) -->
+<div id="start" class="start hidden">
+  <div class="start-card">
+    <div class="start-icon"><svg class="icon" aria-hidden="true"><use href="#i-volume"/></svg></div>
+    <h2 class="start-title">Start the board</h2>
+    <p class="start-text">Tap the button to switch on the alarm. You'll hear one short test alarm.</p>
+    <button class="btn btn-primary"><svg class="icon" aria-hidden="true"><use href="#i-play"/></svg>Start board</button>
+    <ul class="start-tips">
+      <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Turn the speaker volume up</li>
+      <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Keep this screen open — don't let the PC sleep</li>
+    </ul>
+  </div>
+</div>
+
+<!-- alert -->
+<div id="pop" class="alert" role="alertdialog" aria-modal="true" aria-labelledby="alertTitle" aria-describedby="alertDesc">
+  <div class="hazard top" aria-hidden="true"></div>
+  <div class="alert-card" id="alertCard"></div>
+  <div class="hazard bottom" aria-hidden="true"></div>
+</div>
+
+<div id="upd" class="toast hidden" role="status">
+  <span><svg class="icon" aria-hidden="true"><use href="#i-refresh"/></svg><span id="updText"></span></span>
+  <button class="btn btn-primary" type="button">Update</button>
+</div>
 
 <script>
 /* ===================== SETTINGS ===================== */
-const APP_VERSION = "1.2.0";               // bump this AND version.json on every release
-const SUPABASE_URL = "https://gsjdwsbcinfuluoffcah.supabase.co";   // e.g. https://abcd1234.supabase.co
-const SUPABASE_KEY = "sb_publishable_ggkvoNUwNfRT6ET5T5fOkw_zlarg8-p";   // publishable / anon key (safe to put here)
+const APP_VERSION = "1.3.0";               // bump this AND version.json on every release
+const SUPABASE_URL = "https://gsjdwsbcinfuluoffcah.supabase.co";
+const SUPABASE_KEY = "sb_publishable_ggkvoNUwNfRT6ET5T5fOkw_zlarg8-p";   // publishable key (safe to publish)
 const SHOP = "Muhammed Bu Matar Trading";
 const REPEAT_BEEP_SECONDS = 10;            // sound the alarm again while a change is not confirmed
 /* ==================================================== */
 
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const ic=n=>`<svg class="icon" aria-hidden="true"><use href="#i-${n}"/></svg>`;
 const f2=n=>Number(n).toFixed(2);
 const hm=s=>{if(!s)return"";const h=+s.slice(11,13),m=s.slice(14,16);return(h%12||12)+":"+m+(h<12?" AM":" PM");};
 const store={
@@ -225,7 +585,45 @@ const store={
   clear(){try{localStorage.removeItem("ca_session")}catch(e){}}
 };
 let S=store.get(), setupMode=false, timers=[], products=[];
-let rows=[], today="", started=false, ctx=null, shown=null, lastBeep=0;
+let rows=[], today="", started=false, ctx=null, shown=null, lastBeep=0, netOK=true;
+
+/* ---------- favicon (turns red during an alert) ---------- */
+const TAG='<path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/>';
+const TRI='<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>';
+const fav=(bg,fg,p)=>"data:image/svg+xml,"+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="${bg}"/><g transform="translate(4 4)" fill="none" stroke="${fg}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${p}</g></svg>`);
+const FAV_OK=fav("#FBBF24","#0F172A",TAG), FAV_ALERT=fav("#DC2626","#FFFFFF",TRI);
+const setFav=u=>{$("fav").href=u;};
+setFav(FAV_OK);
+
+/* ---------- small UI helpers ---------- */
+function say(id,text,kind){
+  const el=$(id);el.className="msg "+(kind||"");
+  el.innerHTML=text?`${kind==="ok"?ic("check-circle"):kind==="err"?ic("alert"):""}<span>${esc(text)}</span>`:"";
+}
+function busy(btn,on,label){
+  if(on){btn.dataset.html=btn.innerHTML;btn.disabled=true;btn.setAttribute("aria-busy","true");
+    btn.innerHTML=`<span class="spinner" aria-hidden="true"></span>${esc(label)}`;}
+  else{btn.disabled=false;btn.removeAttribute("aria-busy");if(btn.dataset.html)btn.innerHTML=btn.dataset.html;}
+}
+function setNet(ok){
+  if(ok===netOK)return;netOK=ok;
+  document.querySelectorAll(".status").forEach(s=>{
+    s.classList.toggle("off",!ok);
+    s.innerHTML=ok?`<span class="dot"></span><span class="s-text">Live</span>`:`${ic("wifi-off")}<span class="s-text">Offline — retrying</span>`;
+    s.setAttribute("aria-label",ok?"Connected":"Offline, retrying");
+  });
+}
+const dir=r=>r.old_cost==null?"new":r.new_cost>r.old_cost?"up":r.new_cost<r.old_cost?"down":"flat";
+const dirIcon=k=>k==="up"?"arrow-up":k==="down"?"arrow-down":k==="new"?"plus":"minus";
+const tcls=k=>k==="up"?"t-up":k==="down"?"t-down":"";
+function deltaChip(r){
+  const k=dir(r);
+  if(k==="new")return `<span class="delta d-flat">${ic("plus")}New item</span>`;
+  if(k==="flat")return `<span class="delta d-flat">${ic("minus")}No change</span>`;
+  const d=r.new_cost-r.old_cost,p=r.old_cost?d/r.old_cost*100:0;
+  return `<span class="delta d-${k}">${ic(dirIcon(k))}<span class="num">${k==="up"?"Up":"Down"} ${f2(Math.abs(d))} QAR</span><span class="delta-pct num">${d>0?"+":"−"}${Math.abs(p).toFixed(1)}%</span></span>`;
+}
+const emptyHtml=(icon,title,text)=>`<div class="empty">${ic(icon)}<p class="empty-title">${title}</p><p class="empty-text">${text}</p></div>`;
 
 /* ---------- server calls ---------- */
 async function rpc(fn,args={}){
@@ -246,16 +644,16 @@ const T=()=>({p_token:S&&S.token});
 
 /* ---------- screens ---------- */
 function stopTimers(){timers.forEach(clearInterval);timers=[];}
-function hideAll(){["auth","admin","board","start"].forEach(id=>$(id).classList.add("hidden"));$("pop").style.display="none";}
+function hideAll(){["auth","admin","board","start"].forEach(id=>$(id).classList.add("hidden"));closeAlert();}
 function showAuth(setup,message){
-  stopTimers();hideAll();document.body.classList.remove("dark");
+  stopTimers();hideAll();
   setupMode=!!setup;
   $("auth").classList.remove("hidden");
   $("shopName").textContent=SHOP;
   $("setupNote").classList.toggle("hidden",!setupMode);
   $("lbtn").textContent=setupMode?"Create admin login":"Log in";
   $("lpass").setAttribute("autocomplete",setupMode?"new-password":"current-password");
-  $("lmsg").textContent=message||"";
+  say("lmsg",message||"","err");
   focusIfIdle("lname");
 }
 // move the cursor only if the user hasn't already clicked into another box
@@ -264,14 +662,12 @@ function go(mode){
   stopTimers();hideAll();shown=null;
   const admin=S.role==="admin";
   if(mode==="admin"&&admin){
-    document.body.classList.remove("dark");
     $("admin").classList.remove("hidden");
     $("who1").textContent=`${SHOP} · ${S.name} (admin)`;
     loadProducts();loadList();loadUsers();
     timers.push(setInterval(loadList,5000));
     focusIfIdle("code");
   }else{
-    document.body.classList.add("dark");
     $("board").classList.remove("hidden");
     $("who2").textContent=`${SHOP} · ${S.name}`;
     $("toAdmin").classList.toggle("hidden",!admin);
@@ -286,19 +682,20 @@ async function boot(){
   }
   if(S&&S.token){go(S.role==="admin"?"admin":"board");return;}
   try{showAuth(!(await rpc("ca_has_users")));}
-  catch(e){showAuth(false,e.net?"Can't reach the server. Check internet — and if this opened inside an app preview (Claude, WhatsApp, Files), open it in Chrome or Safari instead.":e.message);}
+  catch(e){showAuth(false,e.net?"Can't reach the server. Check the internet — and if this opened inside an app preview (Claude, WhatsApp, Files), open it in Chrome or Safari instead.":e.message);}
 }
 async function doLogin(){
   const name=$("lname").value.trim(),pin=$("lpass").value;
-  if(!name||!pin){$("lmsg").textContent="Enter name and password";return;}
-  $("lbtn").disabled=true;
+  if(!name||!pin){say("lmsg","Enter your name and password","err");(name?$("lpass"):$("lname")).focus();return;}
+  busy($("lbtn"),true,setupMode?"Creating…":"Logging in…");
   try{
     const j=await rpc(setupMode?"ca_setup":"ca_login",{p_name:name,p_pin:pin});
     if(!j||j.error)throw new Error((j&&j.error)||"Login failed");
-    S={token:j.token,name:j.name,role:j.role};store.set(S);$("lpass").value="";$("lmsg").textContent="";
-    go(S.role==="admin"?"admin":"board");
-  }catch(e){$("lmsg").textContent=e.message;}
-  $("lbtn").disabled=false;
+    S={token:j.token,name:j.name,role:j.role};store.set(S);$("lpass").value="";say("lmsg","");
+    busy($("lbtn"),false);
+    go(S.role==="admin"?"admin":"board");return;
+  }catch(e){say("lmsg",e.message,"err");}
+  busy($("lbtn"),false);
 }
 function logout(expired){
   const t=S&&S.token;S=null;store.clear();
@@ -308,12 +705,16 @@ function logout(expired){
 $("lbtn").onclick=doLogin;
 $("lpass").addEventListener("keydown",e=>{if(e.key==="Enter")doLogin();});
 $("lname").addEventListener("keydown",e=>{if(e.key==="Enter")$("lpass").focus();});
+$("lreveal").onclick=()=>{
+  const show=$("lpass").type==="password";$("lpass").type=show?"text":"password";
+  $("lreveal").setAttribute("aria-pressed",show);$("lreveal").setAttribute("aria-label",show?"Hide password":"Show password");
+  $("lreveal").innerHTML=ic(show?"eye-off":"eye");
+};
 document.querySelectorAll("[data-logout]").forEach(b=>b.onclick=()=>{if(confirm("Log out?"))logout(false);});
 $("toBoard").onclick=()=>go("board");
 $("toAdmin").onclick=()=>go("admin");
 
 /* ---------- admin: update cost ---------- */
-function amsg(t,c){$("msg").textContent=t;$("msg").className="msg "+(c||"");}
 async function loadProducts(){
   try{
     products=await rpc("ca_products",T());
@@ -328,80 +729,83 @@ function fill(p){
 async function lookup(){
   const s=$("code").value.trim();if(!s)return;
   try{const p=await rpc("ca_lookup",{...T(),p_q:s});if(p&&p.name)fill(p);else $("pname").focus();}
-  catch(e){amsg(e.message,"up");}
+  catch(e){say("msg",e.message,"err");}
 }
 $("code").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();lookup();}});
 $("pname").addEventListener("change",()=>{const p=products.find(x=>x.name===$("pname").value);if(p)fill(p);});
 function showDiff(){
-  const o=parseFloat($("old").value),n=parseFloat($("new").value),d=$("diff");
-  if(isNaN(o)||isNaN(n)){d.textContent="";d.className="";return;}
-  const x=n-o,pct=o?x/o*100:0;
-  d.className=x>0?"up":x<0?"down":"";
-  d.textContent=x===0?"No change":`${x>0?"▲ +":"▼ "}${f2(x)} QAR  (${x>0?"+":""}${pct.toFixed(1)}%)`;
+  const o=parseFloat($("old").value),n=parseFloat($("new").value);
+  $("diff").innerHTML=(isNaN(o)||isNaN(n))?"":deltaChip({old_cost:o,new_cost:n});
 }
 ["old","new"].forEach(i=>$(i).addEventListener("input",showDiff));
 $("new").addEventListener("keydown",e=>{if(e.key==="Enter")save();});
 $("save").onclick=save;
 async function save(){
   const name=$("pname").value.trim(),nv=$("new").value,ov=$("old").value;
-  if(!name){amsg("Enter the product name","up");$("pname").focus();return;}
-  if(nv===""){amsg("Enter the new cost","up");$("new").focus();return;}
-  $("save").disabled=true;
+  if(!name){say("msg","Enter the product name","err");$("pname").focus();return;}
+  if(nv===""){say("msg","Enter the new cost","err");$("new").focus();return;}
+  if($("save").disabled)return;
+  busy($("save"),true,"Saving…");
   try{
     await rpc("ca_add",{...T(),p_code:$("code").value.trim(),p_name:name,p_old:ov===""?null:Number(ov),
       p_new:Number(nv),p_supplier:$("supplier").value.trim(),p_note:$("note").value.trim()});
-    amsg("✓ Saved — staff screens are being alerted","ok");
+    say("msg","Saved — staff screens are being alerted","ok");
     ["code","pname","old","new","supplier","note"].forEach(i=>$(i).value="");showDiff();$("code").focus();
     loadList();loadProducts();
-  }catch(e){amsg("✗ "+e.message,"up");}
-  $("save").disabled=false;
+  }catch(e){say("msg",e.message,"err");}
+  busy($("save"),false);
 }
 async function loadList(){
   try{
     const j=await rpc("ca_feed",{...T(),p_days:7});
-    $("net1").classList.add("hidden");
+    setNet(true);
     $("list").innerHTML=j.rows.map(r=>{
-      const c=r.old_cost==null?"":r.new_cost>r.old_cost?"up":r.new_cost<r.old_cost?"down":"";
+      const k=dir(r);
       const day=r.changed_at.slice(0,10)===j.today?"Today":r.changed_at.slice(8,10)+"/"+r.changed_at.slice(5,7);
-      const seen=r.seen.length?r.seen.map(s=>`<span class="ok">✓ ${esc(s.by)}</span> <span class="muted">${hm(s.at)}</span>`).join("<br>"):`<span class="wait">Waiting…</span>`;
-      return `<tr><td>${day}<br><span class="muted">${hm(r.changed_at)}</span></td>
-        <td><b>${esc(r.name)}</b><br><span class="muted">${esc(r.code)}${r.supplier?" · "+esc(r.supplier):""}${r.note?" · "+esc(r.note):""}</span></td>
-        <td>${r.old_cost!=null?`<span class="old">${f2(r.old_cost)}</span> → `:""}<b class="${c}">${f2(r.new_cost)}</b></td>
-        <td>${seen}</td>
-        <td><button class="del" title="Delete (mistake only)" data-del="${r.id}">✕</button></td></tr>`;
-    }).join("")||`<tr><td colspan="5" class="muted">No changes yet</td></tr>`;
-  }catch(e){if(e.net)$("net1").classList.remove("hidden");}
+      const seen=r.seen.length?r.seen.map(s=>`<span class="chip chip-ok">${ic("check")}${esc(s.by)} <span class="num">${hm(s.at)}</span></span>`).join("")
+        :`<span class="chip chip-wait">${ic("clock")}Waiting</span>`;
+      const meta=[r.code&&`<span class="num">${esc(r.code)}</span>`,r.supplier&&esc(r.supplier),r.note&&esc(r.note)].filter(Boolean).join(" · ");
+      return `<tr>
+        <td data-label="When"><b>${day}</b><div class="hint num">${hm(r.changed_at)}</div></td>
+        <td data-label="Product"><b>${esc(r.name)}</b>${meta?`<div class="hint">${meta}</div>`:""}</td>
+        <td data-label="Cost (QAR)"><div class="cell-stack"><div class="num">${r.old_cost!=null?`<span class="cost-old">${f2(r.old_cost)}</span>`:""}<span class="cost-new ${tcls(k)}">${f2(r.new_cost)}</span></div><div>${deltaChip(r)}</div></div></td>
+        <td data-label="Seen by"><div class="chips">${seen}</div></td>
+        <td class="td-act"><button class="icon-btn danger" data-del="${r.id}" aria-label="Delete entry for ${esc(r.name)}" title="Delete (mistakes only)">${ic("trash")}</button></td></tr>`;
+    }).join("")||`<tr><td colspan="5"><div class="hint" style="padding:var(--sp-5) 0;text-align:center">No changes yet — save a new cost on the left.</div></td></tr>`;
+  }catch(e){if(e.net)setNet(false);}
 }
 $("list").addEventListener("click",async e=>{
   const b=e.target.closest("[data-del]");if(!b)return;
   if(!confirm("Delete this entry? Use only for mistakes."))return;
-  try{await rpc("ca_delete",{...T(),p_id:Number(b.dataset.del)});loadList();loadProducts();}catch(err){amsg(err.message,"up");}
+  try{await rpc("ca_delete",{...T(),p_id:Number(b.dataset.del)});loadList();loadProducts();}catch(err){say("msg",err.message,"err");}
 });
 
 /* ---------- admin: logins ---------- */
-function umsg(t,c){$("umsg").textContent=t;$("umsg").className="msg "+(c||"");}
 async function loadUsers(){
   try{
     const us=await rpc("ca_users_list",T());
-    $("ulist").innerHTML=us.map(u=>`<tr><td><b>${esc(u.name)}</b>${u.name.toLowerCase()===S.name.toLowerCase()?' <span class="muted">(you)</span>':""}</td>
-      <td>${u.role==="admin"?"Admin":"Staff"}</td>
-      <td>${u.name.toLowerCase()===S.name.toLowerCase()?"":`<button class="del" title="Remove login" data-uid="${u.id}" data-uname="${esc(u.name)}">✕</button>`}</td></tr>`).join("");
-  }catch(e){umsg(e.message,"up");}
+    $("ulist").innerHTML=us.map(u=>{
+      const me=u.name.toLowerCase()===S.name.toLowerCase();
+      return `<tr><td data-label="Name"><b>${esc(u.name)}</b>${me?' <span class="hint">(you)</span>':""}</td>
+        <td data-label="Role"><span class="chip chip-caps ${u.role==="admin"?"chip-brand":"chip-neutral"}">${u.role==="admin"?"Admin":"Staff"}</span></td>
+        <td class="td-act">${me?"":`<button class="icon-btn danger" data-uid="${u.id}" data-uname="${esc(u.name)}" aria-label="Remove login for ${esc(u.name)}" title="Remove login">${ic("trash")}</button>`}</td></tr>`;
+    }).join("");
+  }catch(e){say("umsg",e.message,"err");}
 }
 $("usave").onclick=async()=>{
   const name=$("uname").value.trim(),pin=$("upass").value,role=$("urole").value;
-  if(!name){umsg("Enter a name","up");return;}
-  $("usave").disabled=true;
+  if(!name){say("umsg","Enter a name","err");$("uname").focus();return;}
+  busy($("usave"),true,"Saving…");
   try{
     await rpc("ca_user_save",{...T(),p_name:name,p_pin:pin,p_role:role});
-    umsg(`✓ Login saved for ${name}`,"ok");$("uname").value="";$("upass").value="";loadUsers();
-  }catch(e){umsg("✗ "+e.message,"up");}
-  $("usave").disabled=false;
+    say("umsg",`Login saved for ${name}`,"ok");$("uname").value="";$("upass").value="";loadUsers();
+  }catch(e){say("umsg",e.message,"err");}
+  busy($("usave"),false);
 };
 $("ulist").addEventListener("click",async e=>{
   const b=e.target.closest("[data-uid]");if(!b)return;
   if(!confirm(`Remove login for ${b.dataset.uname}?`))return;
-  try{await rpc("ca_user_remove",{...T(),p_id:Number(b.dataset.uid)});umsg("✓ Removed","ok");loadUsers();}catch(err){umsg("✗ "+err.message,"up");}
+  try{await rpc("ca_user_remove",{...T(),p_id:Number(b.dataset.uid)});say("umsg","Login removed","ok");loadUsers();}catch(err){say("umsg",err.message,"err");}
 });
 
 /* ---------- board + alert ---------- */
@@ -435,11 +839,11 @@ function beep(){
   try{if(navigator.vibrate)navigator.vibrate([400,150,400,150,400]);}catch(e){}
   lastBeep=Date.now();
 }
-// flash the tab title so the alert shows on the taskbar even behind other windows
+// flash the tab title + favicon so the alert shows on the taskbar even behind other windows
 let titleFlash=null;
 function flashTitle(on){
-  if(on&&!titleFlash){let f=false;titleFlash=setInterval(()=>{document.title=(f=!f)?"⚠ COST CHANGED ⚠":"Cost Alert";},800);}
-  if(!on&&titleFlash){clearInterval(titleFlash);titleFlash=null;document.title="Cost Alert";}
+  if(on&&!titleFlash){let f=false;titleFlash=setInterval(()=>{f=!f;document.title=f?"⚠ COST CHANGED ⚠":"Cost Alert";setFav(f?FAV_ALERT:FAV_OK);},800);}
+  if(!on&&titleFlash){clearInterval(titleFlash);titleFlash=null;document.title="Cost Alert";setFav(FAV_OK);}
 }
 $("start").onclick=()=>{
   try{ctx=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}
@@ -449,70 +853,103 @@ $("start").onclick=()=>{
   render();
   if(!shown)beep();   // sound check: staff hear the alarm once when they start the board
 };
-const cls=r=>r.old_cost==null?"":r.new_cost>r.old_cost?"up":r.new_cost<r.old_cost?"down":"";
-function diffHtml(r){
-  if(r.old_cost==null)return"new item";
-  const d=r.new_cost-r.old_cost,p=r.old_cost?d/r.old_cost*100:0;
-  if(d===0)return"no change";
-  return `<span class="${d>0?"up":"down"}">${d>0?"▲ +":"▼ "}${f2(d)} QAR (${d>0?"+":""}${p.toFixed(1)}%)</span>`;
-}
 function itemHtml(r,isToday){
-  const c=cls(r),seen=r.seen.map(s=>s.by).join(", ");
-  return `<div class="item ${isToday?"today":"yday"} ${r.me_seen||S.role==="admin"?"":"unseen"}">
-    <div><div class="name">${esc(r.name)}</div>
-      <div class="code">${r.code?"Code "+esc(r.code):""}${r.supplier?" · "+esc(r.supplier):""}</div></div>
-    <div class="price">${r.old_cost!=null?`<span class="old">${f2(r.old_cost)}</span>`:""}<span class="new ${c}">${f2(r.new_cost)}</span>
-      <span class="arrow ${c}">${c==="up"?"▲":c==="down"?"▼":""}</span></div>
-    <div class="meta"><span>${diffHtml(r)}${r.note?" · "+esc(r.note):""}</span>
-      <span>${hm(r.changed_at)}${seen?" · ✓ "+esc(seen):""}</span></div></div>`;
+  const k=dir(r),isNew=!r.me_seen&&S.role!=="admin";
+  const seen=r.seen.map(s=>s.by).join(", ");
+  return `<article class="change ${isToday?"":"past"} ${isNew?"is-new":""}" data-dir="${k}">
+    <div class="dir-badge" aria-hidden="true">${ic(dirIcon(k))}</div>
+    <div>
+      <h3 class="c-name">${esc(r.name)}${isNew?'<span class="chip chip-brand chip-caps">New</span>':""}</h3>
+      <div class="c-meta">
+        ${r.code?`<span>Code <span class="num">${esc(r.code)}</span></span>`:""}
+        ${r.supplier?`<span>${esc(r.supplier)}</span>`:""}
+        <span class="num">${ic("clock")}${hm(r.changed_at)}</span>
+        ${seen?`<span class="c-seen">${ic("check")}Seen by ${esc(seen)}</span>`:""}
+      </div>
+      ${r.note?`<p class="c-note">${esc(r.note)}</p>`:""}
+    </div>
+    <div class="c-price">
+      ${r.old_cost!=null?`<span class="c-old num"><span class="sr-only">Old cost </span>${f2(r.old_cost)}</span>`:""}
+      <span class="c-new num ${tcls(k)}"><span class="sr-only">New cost </span>${f2(r.new_cost)}<span class="c-cur">QAR</span></span>
+      <span class="c-delta">${deltaChip(r)}</span>
+    </div>
+  </article>`;
 }
 function render(){
   const t=rows.filter(r=>r.changed_at.slice(0,10)===today),y=rows.filter(r=>r.changed_at.slice(0,10)!==today);
-  let h=`<div class="sec">Today</div>`+(t.length?t.map(r=>itemHtml(r,true)).join(""):`<div class="empty">No cost changes today</div>`);
-  if(y.length)h+=`<div class="sec">Yesterday</div>`+y.map(r=>itemHtml(r,false)).join("");
+  const up=t.filter(r=>dir(r)==="up").length,dn=t.filter(r=>dir(r)==="down").length;
+  $("liveCount").textContent=t.length;
+  $("stats").innerHTML=`<span class="stat"><span class="num">${t.length}</span> today</span>
+    <span class="stat s-up">${ic("arrow-up")}<span class="num">${up}</span> up</span>
+    <span class="stat s-down">${ic("arrow-down")}<span class="num">${dn}</span> down</span>`;
+  let h=`<h2 class="section-h">Today</h2>`+(t.length?t.map(r=>itemHtml(r,true)).join("")
+    :emptyHtml("check-circle","No cost changes today","New changes appear here automatically — with an alarm and a pop-up."));
+  if(y.length)h+=`<h2 class="section-h">Yesterday</h2>`+y.map(r=>itemHtml(r,false)).join("");
   $("blist").innerHTML=h;
   popup();
+}
+function closeAlert(){
+  $("pop").classList.remove("open");document.documentElement.classList.remove("alert-open");
+  $("board").inert=false;shown=null;flashTitle(false);
 }
 function popup(){
   const staff=S&&S.role!=="admin";
   const unseen=rows.filter(r=>!r.me_seen).sort((a,b)=>a.id-b.id);
-  if(!staff||!started||!unseen.length){$("pop").style.display="none";shown=null;flashTitle(false);return;}
+  if(!staff||!started||!unseen.length){if(shown!==null||$("pop").classList.contains("open"))closeAlert();return;}
   flashTitle(true);
-  const r=unseen[0];
+  const r=unseen[0],k=dir(r);
   if(shown!==r.id){
     shown=r.id;
-    $("box").innerHTML=`<h2>⚠ COST CHANGED</h2>
-      <div class="pname">${esc(r.name)}</div><div class="pcode">${r.code?"Code "+esc(r.code):""}</div>
-      <div class="prices">${r.old_cost!=null?`<span class="old" style="font-size:30px">${f2(r.old_cost)}</span> → `:""}<b class="${cls(r)}">${f2(r.new_cost)} QAR</b></div>
-      <div class="d">${diffHtml(r)}</div>
-      ${(r.supplier||r.note)?`<div class="n">${esc([r.supplier,r.note].filter(Boolean).join(" · "))}</div>`:""}
-      <div class="n">Changed at ${hm(r.changed_at)}</div>
-      <button class="seenbtn" id="seenBtn">✓ SEEN</button>
-      <div id="more"></div>`;
+    const meta=[r.code&&`Code <span class="num">${esc(r.code)}</span>`,r.supplier&&esc(r.supplier)].filter(Boolean).join(" · ");
+    $("alertCard").innerHTML=`
+      <div class="alert-head"><h2 class="alert-title" id="alertTitle">${ic("alert")}Cost changed</h2><span class="alert-count num hidden" id="alertCount"></span></div>
+      <div class="alert-body">
+        <div id="alertDesc">
+          <p class="a-name">${esc(r.name)}</p>
+          ${meta?`<p class="a-meta">${meta}</p>`:""}
+          <div class="a-prices">
+            <div><div class="a-label">Old cost</div><div class="a-old num">${r.old_cost!=null?f2(r.old_cost):"—"}</div></div>
+            <div class="a-arrow" aria-hidden="true">${ic("arrow-right")}</div>
+            <div><div class="a-label">New cost (QAR)</div><div class="a-new num ${tcls(k)}">${f2(r.new_cost)}</div></div>
+          </div>
+          <div>${deltaChip(r)}</div>
+          ${r.note?`<p class="a-note">${ic("note")}<span>${esc(r.note)}</span></p>`:""}
+          <p class="a-foot">Changed at <span class="num">${hm(r.changed_at)}</span>${r.changed_by?` by ${esc(r.changed_by)}`:""}</p>
+        </div>
+        <button class="seen-btn" id="seenBtn" type="button">${ic("check")}Seen — I understand</button>
+      </div>`;
+    $("pop").classList.add("open");document.documentElement.classList.add("alert-open");
+    $("board").inert=true;
     beep();
+    setTimeout(()=>{const b=$("seenBtn");if(b)b.focus({preventScroll:true});},30);
   }
-  $("more").textContent=unseen.length>1?`+${unseen.length-1} more change(s) waiting`:"";
-  $("pop").style.display="flex";
+  const c=$("alertCount");c.textContent=`1 of ${unseen.length}`;c.classList.toggle("hidden",unseen.length<2);
   if(Date.now()-lastBeep>REPEAT_BEEP_SECONDS*1000)beep();
 }
-$("box").addEventListener("click",async e=>{
-  if(!e.target.closest("#seenBtn")||!shown)return;
-  const id=shown;e.target.disabled=true;
+$("pop").addEventListener("click",async e=>{
+  const b=e.target.closest("#seenBtn");if(!b||!shown)return;
+  const id=shown;b.disabled=true;
   try{await rpc("ca_seen",{...T(),p_id:id});}catch(err){}
   const r=rows.find(x=>x.id===id);if(r){r.me_seen=true;r.seen.push({by:S.name,at:""});}
   shown=null;render();
+  if(!$("pop").classList.contains("open")&&!$("recent").classList.contains("hidden"))$("q").focus();
+});
+// keep keyboard focus inside the alert while it is open
+document.addEventListener("keydown",e=>{
+  if(e.key==="Tab"&&$("pop").classList.contains("open")){e.preventDefault();const b=$("seenBtn");if(b)b.focus();}
 });
 async function poll(){
   try{
     const j=await rpc("ca_feed",{...T(),p_days:2});
-    rows=j.rows;today=j.today;$("net2").classList.add("hidden");render();
-  }catch(e){if(e.net)$("net2").classList.remove("hidden");}
+    rows=j.rows;today=j.today;setNet(true);render();
+  }catch(e){if(e.net)setNet(false);}
 }
 function tick(){
   const d=new Date();
-  $("clock").innerHTML=d.toLocaleDateString("en-GB",{weekday:"short",day:"2-digit",month:"short",year:"numeric"})+
-    "<br>"+d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
+  $("clock").innerHTML=`<div class="clock-time num">${d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})}</div>
+    <div class="clock-date">${d.toLocaleDateString("en-GB",{weekday:"short",day:"2-digit",month:"short"})}</div>`;
 }
+
 /* ---------- Recent tab: search history by barcode / code / name ---------- */
 let qTimer=null,qSeq=0;
 const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -524,20 +961,21 @@ function dayLabel(s){
   return `${s.slice(8,10)} ${MON[+s.slice(5,7)-1]} ${s.slice(0,4)}`;
 }
 function setTab(t){
-  document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.tab===t));
+  document.querySelectorAll(".seg").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===t?"true":"false"));
   $("blist").classList.toggle("hidden",t!=="live");
   $("recent").classList.toggle("hidden",t!=="recent");
   if(t==="recent"){search();$("q").focus();}
 }
-document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
+document.querySelectorAll(".seg").forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
 function rowHtml(r,latest){
-  const c=cls(r);
-  return `<div class="rrow ${latest?"latest":""}">
-    <div class="rdate">${dayLabel(r.changed_at)}<br>${hm(r.changed_at)}</div>
-    <div><div class="rname">${esc(r.name)}${latest?'<span class="rtag">CURRENT</span>':""}</div>
-      <div class="rcode">${r.code?"Code "+esc(r.code):""}${r.supplier?" · "+esc(r.supplier):""}${r.note?" · "+esc(r.note):""}</div></div>
-    <div class="rprice">${r.old_cost!=null?`<span class="old">${f2(r.old_cost)}</span>→ `:""}<span class="rnew ${c}">${f2(r.new_cost)}</span>
-      <div class="rdiff">${diffHtml(r)}</div></div></div>`;
+  const k=dir(r);
+  const meta=[r.code&&`<span>Code <span class="num">${esc(r.code)}</span></span>`,r.supplier&&`<span>${esc(r.supplier)}</span>`,r.note&&`<span>${esc(r.note)}</span>`].filter(Boolean).join("");
+  return `<article class="hist ${latest?"current":""}">
+    <div class="h-when"><b>${dayLabel(r.changed_at)}</b><span class="num">${hm(r.changed_at)}</span></div>
+    <div><h3 class="h-name">${esc(r.name)}${latest?'<span class="chip chip-brand chip-caps">Current</span>':""}</h3>
+      ${meta?`<div class="c-meta">${meta}</div>`:""}</div>
+    <div class="h-price">${r.old_cost!=null?`<span class="c-old num">${f2(r.old_cost)}</span>`:""}<span class="h-new num ${tcls(k)}">${f2(r.new_cost)}</span>${deltaChip(r)}</div>
+  </article>`;
 }
 async function search(){
   const s=$("q").value.trim(),my=++qSeq;
@@ -547,13 +985,13 @@ async function search(){
     if(my!==qSeq)return;                        // a newer search already started
     const seenNames=new Set();
     $("qres").innerHTML=res.map(r=>{const latest=!seenNames.has(r.name);seenNames.add(r.name);return rowHtml(r,latest&&!!s);}).join("")
-      ||`<div class="empty">No cost changes found${s?` for "${esc(s)}"`:""}</div>`;
-    $("qinfo").textContent=s?`${res.length} change(s) for "${s}" — newest first`:`All cost changes in the last 30 days (${res.length}) — newest first`;
-  }catch(e){if(my===qSeq)$("qinfo").textContent="✗ "+e.message;}
+      ||emptyHtml("search",s?`No cost changes for “${esc(s)}”`:"No cost changes in the last 30 days",
+                  s?"Try the barcode, a shorter part of the name, or the supplier.":"Changes will appear here once the office updates a cost.");
+    $("qinfo").textContent=s?`${res.length} change(s) for “${s}” — newest first`:`All cost changes in the last 30 days (${res.length}) — newest first`;
+  }catch(e){if(my===qSeq)$("qinfo").textContent="Couldn't search: "+e.message;}
 }
-$("q").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();clearTimeout(qTimer);search();}});
+$("qform").addEventListener("submit",e=>{e.preventDefault();clearTimeout(qTimer);search();});
 $("q").addEventListener("input",()=>{clearTimeout(qTimer);qTimer=setTimeout(search,400);});
-$("qbtn").onclick=()=>{clearTimeout(qTimer);search();};
 
 /* ---------- version + update notice ---------- */
 document.querySelectorAll(".ver").forEach(e=>e.textContent="v"+APP_VERSION);
@@ -563,7 +1001,7 @@ async function checkUpdate(){
     const r=await fetch("version.json?ts="+Date.now(),{cache:"no-store"});if(!r.ok)return;
     const j=await r.json();
     if(j.version&&j.version!==APP_VERSION){
-      $("upd").textContent=`New version v${j.version} available — tap to update`;
+      $("updText").textContent=`New version v${j.version} is ready`;
       $("upd").classList.remove("hidden");
     }
   }catch(e){}

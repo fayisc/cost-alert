@@ -9,6 +9,12 @@ Cost-change alert board for **Muhammed Bu Matar Trading**.
 - **Recent** tab: staff scan a barcode or type a name to see a product's cost history.
 - Works on any Wi-Fi or network; only internet is needed.
 
+| Staff alert | Staff board |
+|---|---|
+| ![Alert](docs/alert-desktop.png) | ![Board](docs/board-desktop.png) |
+
+Design rules, colours, sizes and the accessibility checklist are in **[DESIGN.md](DESIGN.md)**.
+
 ## How it's built
 | Part | Where |
 |---|---|

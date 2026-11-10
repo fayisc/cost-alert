@@ -2,6 +2,23 @@
 
 All notable changes to Cost Alert. Versions follow `MAJOR.MINOR.PATCH`.
 
+## v1.3.0 — 2026-11-10
+### Changed — full UI/UX redesign (see `DESIGN.md`)
+- New dark "signal board" design system: colour tokens, Inter type scale, 8-pt spacing, every colour pair measured to WCAG AA.
+- **Alert:** full-screen pulsing red with hazard stripes, white card, new price up to 120 px, "Up 50.00 QAR +8.3%" chip, who changed it and when, "1 of 3" queue counter, large green **Seen — I understand** button.
+- Alert scales up on 1080p TVs so it reads from across the shop.
+- Board rows stay calm (dark, with a red/green side bar) so the alert is the loudest thing on screen. Unconfirmed rows get an amber **NEW** tag.
+- Live / Recent tabs as a segmented control with today's count, plus "today / up / down" summary chips.
+- Taskbar favicon turns red during an alert, together with the flashing title.
+- SVG icons (Lucide) instead of emoji. Arrows and words show up/down, not colour alone.
+- Admin: labelled form with barcode icon, required markers, live "Down 10.00 QAR" preview, loading spinners, status chips for "Seen by" / "Waiting".
+- Login: show/hide password, clearer errors.
+
+### Accessibility
+- Every control ≥ 48 px. Visible focus rings. Alert is an `alertdialog`: focus goes to **Seen**, Enter confirms, Tab stays inside.
+- Respects *reduced motion*. Alert pulse stays below the 3-flashes-per-second seizure limit.
+- Phone layout: no horizontal scroll at 375 px, tables become cards, landscape can reach **Seen**.
+
 ## v1.2.0 — 2026-11-09
 ### Added
 - **Recent** tab on the staff board: scan a barcode or type a name/code/supplier to see that product's cost history (newest first, latest marked **CURRENT**). Empty search shows all changes from the last 30 days.
