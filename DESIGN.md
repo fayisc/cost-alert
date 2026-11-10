@@ -16,6 +16,7 @@ A dark **signal board** for a hardware shop counter. The rule behind every decis
 | Pattern | Yellow/black hazard stripes top and bottom | Hardware-shop "caution" sign, readable at a glance and not colour-only |
 | Contrast | White card on red (16:1) with 88–120 px new price | Read from across the counter |
 | Taskbar | Tab title flashes "⚠ COST CHANGED ⚠", favicon turns red | Visible even when the sales software is in front |
+| Windows notification (v1.4) | Pops over every app, even with Chrome minimised, and stays until answered. **Seen** button confirms and stops the siren. | Staff don't need to switch windows to see or confirm a change |
 | Focus | Keyboard focus lands on **Seen**, Enter confirms | Fast for a cashier with hands on the keyboard |
 | Queue | "1 of 3" counter | Staff know how many are left |
 

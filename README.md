@@ -30,6 +30,30 @@ The Supabase key in `index.html` is the public *publishable* key. It is safe to 
 3. Admin page → **Logins** → add staff.
 4. On each staff screen: log in → **START BOARD** (plays a sound check) → keep the volume up.
 
+## Counter PC setup (do once per PC)
+**1. Allow notifications.** Open the link in Chrome, log in as staff, tap **Start board**, then click **Allow** when Chrome asks.
+The board should show green **Sound on** and **Notifications on**. Tap them to test.
+
+**2. Windows settings.** Go to **Settings → System → Notifications**:
+- **Google Chrome** must be **On**.
+- **Do not disturb** must be **Off**.
+- Under the automatic rules, untick *"When using an app in full-screen mode"*. Otherwise Windows hides notifications while the sales software is full screen.
+
+**3. Stop staff closing it: a shortcut that opens the board on its own.** Close Chrome completely, then on the desktop: right-click → **New → Shortcut**, and paste one of these:
+
+| Counter set-up | Shortcut target |
+|---|---|
+| Board on its own screen / TV (full screen, no close button) | `"C:\Program Files\Google\Chrome\Application\chrome.exe" --kiosk --autoplay-policy=no-user-gesture-required https://fayisc.github.io/cost-alert/` |
+| Same PC as the sales software (small window, can be minimised) | `"C:\Program Files\Google\Chrome\Application\chrome.exe" --app=https://fayisc.github.io/cost-alert/ --autoplay-policy=no-user-gesture-required` |
+
+`--autoplay-policy=…` lets the alarm sound after a restart without anyone tapping START.
+
+**4. Open it on every start-up.** Press **Win + R**, type `shell:startup`, Enter, and copy the shortcut into that folder.
+
+Notifications only work while the board is open (minimised is fine). If Chrome is fully closed, nothing can alert.
+
+**No sound?** Check the **Sound** button on the board (tap it if it's amber). Make sure the speaker is on and not muted, and that the Chrome tab isn't muted (right-click the tab).
+
 ## Releasing a new version
 1. Make the change in `index.html`.
 2. Bump `APP_VERSION` in `index.html` **and** `version` in `version.json` (same number).

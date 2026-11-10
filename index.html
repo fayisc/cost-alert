@@ -216,6 +216,17 @@ select.input{appearance:none;padding-right:44px;cursor:pointer;
   background:var(--surface);border:1px solid var(--border);font-size:var(--fs-14);font-weight:600;color:var(--text-2)}
 .stat .icon{width:16px;height:16px}
 .stat.s-up{color:var(--up)} .stat.s-down{color:var(--down)}
+.toolbar-right{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-2) var(--sp-3)}
+.tools{display:flex;flex-wrap:wrap;gap:var(--sp-2)}
+.tool{display:inline-flex;align-items:center;gap:var(--sp-2);min-height:var(--target);padding:0 var(--sp-4);border-radius:var(--r-full);
+  border:1px solid var(--border-input);background:var(--surface);color:var(--text-2);font-size:var(--fs-14);font-weight:700;
+  transition:background-color var(--dur-fast),transform var(--dur-fast)}
+.tool:active{transform:scale(.98)}
+.tool .icon{width:18px;height:18px}
+.tool.on{background:var(--down-tint);color:var(--ok);border-color:transparent}
+.tool.warn{background:var(--brand);color:var(--on-brand);border-color:transparent}
+.tool.off{background:var(--up-tint);color:var(--danger);border-color:transparent}
+#notifHelp{margin-top:var(--sp-3)}
 .section-h{display:flex;align-items:center;gap:var(--sp-3);margin:var(--sp-6) 0 var(--sp-3);font-size:var(--fs-14);font-weight:700;
   letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted)}
 .section-h::after{content:"";flex:1;height:1px;background:var(--border)}
@@ -410,6 +421,8 @@ select.input{appearance:none;padding-right:44px;cursor:pointer;
   <symbol id="i-user-plus" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/></symbol>
   <symbol id="i-bell" viewBox="0 0 24 24"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M22 8c0-2.3-.8-4.3-2-6"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/><path d="M4 2C2.8 3.7 2 5.7 2 8"/></symbol>
   <symbol id="i-volume" viewBox="0 0 24 24"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><path d="M16 9a5 5 0 0 1 0 6"/><path d="M19.364 18.364a9 9 0 0 0 0-12.728"/></symbol>
+  <symbol id="i-volume-x" viewBox="0 0 24 24"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><path d="M22 9l-6 6"/><path d="M16 9l6 6"/></symbol>
+  <symbol id="i-bell-off" viewBox="0 0 24 24"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M17 17H4a1 1 0 0 1-.74-1.673C4.59 13.956 6 12.499 6 8a6 6 0 0 1 .258-1.742"/><path d="m2 2 20 20"/><path d="M8.668 3.01A6 6 0 0 1 18 8c0 2.687.77 4.653 1.707 6.05"/></symbol>
   <symbol id="i-play" viewBox="0 0 24 24"><path d="M6 3l14 9-14 9z"/></symbol>
   <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></symbol>
   <symbol id="i-wifi-off" viewBox="0 0 24 24"><path d="M12 20h.01"/><path d="M8.5 16.429a5 5 0 0 1 7 0"/><path d="M5 12.859a10 10 0 0 1 5.17-2.69"/><path d="M19 12.859a10 10 0 0 0-2.007-1.523"/><path d="M2 8.82a15 15 0 0 1 4.177-2.643"/><path d="M22 8.82a15 15 0 0 0-11.288-3.764"/><path d="m2 2 20 20"/></symbol>
@@ -520,8 +533,17 @@ select.input{appearance:none;padding-right:44px;cursor:pointer;
         <button class="seg" role="tab" id="tab-recent" data-tab="recent" aria-selected="false" aria-controls="recent">
           <svg class="icon" aria-hidden="true"><use href="#i-history"/></svg>Recent</button>
       </div>
-      <div class="stats" id="stats"></div>
+      <div class="toolbar-right">
+        <div class="stats" id="stats"></div>
+        <div class="tools hidden" id="tools">
+          <button class="tool" id="soundBtn" type="button" title="Play a test alarm"></button>
+          <button class="tool hidden" id="notifBtn" type="button"></button>
+        </div>
+      </div>
     </div>
+    <div id="notifHelp" class="notice hidden" role="status"><svg class="icon" aria-hidden="true"><use href="#i-info"/></svg>
+      <span>Notifications are blocked for this site. In Chrome, click the icon on the left of the address bar → <b>Notifications</b> → <b>Allow</b>, then reload.
+      Also check Windows <b>Settings → System → Notifications</b>: Google Chrome must be <b>On</b> and <b>Do not disturb</b> off.</span></div>
     <div id="blist" role="tabpanel" aria-labelledby="tab-live"></div>
     <div id="recent" role="tabpanel" aria-labelledby="tab-recent" class="hidden">
       <form class="search" id="qform" role="search">
@@ -544,9 +566,10 @@ select.input{appearance:none;padding-right:44px;cursor:pointer;
   <div class="start-card">
     <div class="start-icon"><svg class="icon" aria-hidden="true"><use href="#i-volume"/></svg></div>
     <h2 class="start-title">Start the board</h2>
-    <p class="start-text">Tap the button to switch on the alarm. You'll hear one short test alarm.</p>
+    <p class="start-text">Tap the button to switch on the alarm and Windows notifications. You'll hear one short test alarm.</p>
     <button class="btn btn-primary"><svg class="icon" aria-hidden="true"><use href="#i-play"/></svg>Start board</button>
     <ul class="start-tips">
+      <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>When Chrome asks about notifications, click <b>Allow</b></li>
       <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Turn the speaker volume up</li>
       <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Keep this screen open — don't let the PC sleep</li>
     </ul>
@@ -567,7 +590,7 @@ select.input{appearance:none;padding-right:44px;cursor:pointer;
 
 <script>
 /* ===================== SETTINGS ===================== */
-const APP_VERSION = "1.3.0";               // bump this AND version.json on every release
+const APP_VERSION = "1.4.0";               // bump this AND version.json on every release
 const SUPABASE_URL = "https://gsjdwsbcinfuluoffcah.supabase.co";
 const SUPABASE_KEY = "sb_publishable_ggkvoNUwNfRT6ET5T5fOkw_zlarg8-p";   // publishable key (safe to publish)
 const SHOP = "Muhammed Bu Matar Trading";
@@ -643,7 +666,14 @@ async function rpc(fn,args={}){
 const T=()=>({p_token:S&&S.token});
 
 /* ---------- screens ---------- */
-function stopTimers(){timers.forEach(clearInterval);timers=[];}
+// Chrome slows normal timers when the window is minimised; timers inside a Worker keep ticking.
+function every(ms,fn){
+  try{
+    const w=new Worker(URL.createObjectURL(new Blob([`setInterval(()=>postMessage(0),${ms})`],{type:"text/javascript"})));
+    w.onmessage=()=>fn();return {stop:()=>w.terminate()};
+  }catch(e){const t=setInterval(fn,ms);return {stop:()=>clearInterval(t)};}
+}
+function stopTimers(){timers.forEach(t=>t.stop());timers=[];}
 function hideAll(){["auth","admin","board","start"].forEach(id=>$(id).classList.add("hidden"));closeAlert();}
 function showAuth(setup,message){
   stopTimers();hideAll();
@@ -665,15 +695,21 @@ function go(mode){
     $("admin").classList.remove("hidden");
     $("who1").textContent=`${SHOP} · ${S.name} (admin)`;
     loadProducts();loadList();loadUsers();
-    timers.push(setInterval(loadList,5000));
+    timers.push(every(5000,loadList));
     focusIfIdle("code");
   }else{
     $("board").classList.remove("hidden");
     $("who2").textContent=`${SHOP} · ${S.name}`;
     $("toAdmin").classList.toggle("hidden",!admin);
     setTab("live");
-    if(!admin&&!started)$("start").classList.remove("hidden");
-    poll();timers.push(setInterval(poll,3000));
+    if(!admin&&!started){
+      // skip the START screen only once the notification question has been answered
+      if(!(canNotify()&&Notification.permission==="default"))tryAutoStart();
+      if(!started)$("start").classList.remove("hidden");
+    }
+    if(!admin&&canNotify()&&Notification.permission==="granted")setupSW();
+    updateTools();
+    poll();timers.push(every(3000,poll));
   }
 }
 async function boot(){
@@ -698,7 +734,7 @@ async function doLogin(){
   busy($("lbtn"),false);
 }
 function logout(expired){
-  const t=S&&S.token;S=null;store.clear();
+  const t=S&&S.token;S=null;store.clear();notified.clear();
   if(t&&!expired)rpc("ca_logout",{p_token:t}).catch(()=>{});
   showAuth(false,expired?"Session ended — please log in again":"");
 }
@@ -846,10 +882,13 @@ function flashTitle(on){
   if(!on&&titleFlash){clearInterval(titleFlash);titleFlash=null;document.title="Cost Alert";setFav(FAV_OK);}
 }
 $("start").onclick=()=>{
-  try{ctx=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}
+  ensureAudio();
+  const asking=canNotify()&&Notification.permission==="default";
+  askNotify();
   $("start").classList.add("hidden");started=true;
   const el=document.documentElement;
-  if(el.requestFullscreen)el.requestFullscreen().catch(()=>{});
+  // don't go full screen while Chrome is showing the notification question
+  if(!asking&&el.requestFullscreen)el.requestFullscreen().catch(()=>{});
   render();
   if(!shown)beep();   // sound check: staff hear the alarm once when they start the board
 };
@@ -886,6 +925,7 @@ function render(){
     :emptyHtml("check-circle","No cost changes today","New changes appear here automatically — with an alarm and a pop-up."));
   if(y.length)h+=`<h2 class="section-h">Yesterday</h2>`+y.map(r=>itemHtml(r,false)).join("");
   $("blist").innerHTML=h;
+  rows.forEach(r=>{if(r.me_seen&&notified.has(r.id))closeNotif(r.id);});
   popup();
 }
 function closeAlert(){
@@ -895,6 +935,7 @@ function closeAlert(){
 function popup(){
   const staff=S&&S.role!=="admin";
   const unseen=rows.filter(r=>!r.me_seen).sort((a,b)=>a.id-b.id);
+  if(staff)unseen.slice(-5).forEach(notifyChange);   // Windows notifications (newest 5), even before START is tapped
   if(!staff||!started||!unseen.length){if(shown!==null||$("pop").classList.contains("open"))closeAlert();return;}
   flashTitle(true);
   const r=unseen[0],k=dir(r);
@@ -930,6 +971,7 @@ $("pop").addEventListener("click",async e=>{
   const b=e.target.closest("#seenBtn");if(!b||!shown)return;
   const id=shown;b.disabled=true;
   try{await rpc("ca_seen",{...T(),p_id:id});}catch(err){}
+  closeNotif(id);
   const r=rows.find(x=>x.id===id);if(r){r.me_seen=true;r.seen.push({by:S.name,at:""});}
   shown=null;render();
   if(!$("pop").classList.contains("open")&&!$("recent").classList.contains("hidden"))$("q").focus();
@@ -949,6 +991,103 @@ function tick(){
   $("clock").innerHTML=`<div class="clock-time num">${d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})}</div>
     <div class="clock-date">${d.toLocaleDateString("en-GB",{weekday:"short",day:"2-digit",month:"short"})}</div>`;
 }
+
+/* ---------- sound status ---------- */
+function ensureAudio(){
+  try{
+    if(!ctx){ctx=new (window.AudioContext||window.webkitAudioContext)();ctx.onstatechange=updateTools;}
+    if(ctx.state==="suspended")ctx.resume().then(updateTools).catch(()=>{});
+  }catch(e){}
+  updateTools();
+}
+// starts without the START tap when Chrome already allows sound (e.g. kiosk shortcut with the autoplay flag)
+function tryAutoStart(){
+  try{if(!ctx){ctx=new (window.AudioContext||window.webkitAudioContext)();ctx.onstatechange=updateTools;}}catch(e){}
+  if(ctx&&ctx.state==="running")started=true;
+}
+// any tap on the page switches sound back on if Chrome paused it
+document.addEventListener("pointerdown",()=>{if(started&&ctx&&ctx.state!=="running")ensureAudio();});
+$("soundBtn").onclick=()=>{ensureAudio();setTimeout(beep,60);};
+
+/* ---------- Windows / desktop notifications ---------- */
+const canNotify=()=>"Notification" in window&&"serviceWorker" in navigator&&location.protocol.startsWith("http");
+const ICON_ALERT=new URL("icon-alert.png",location.href).href, ICON_OK=new URL("icon.png",location.href).href;
+const notified=new Set();
+let swReady=null;
+function setupSW(){
+  if(!canNotify())return Promise.resolve(null);
+  if(!swReady)swReady=navigator.serviceWorker.register("sw.js").then(()=>navigator.serviceWorker.ready).catch(()=>{swReady=null;return null;});
+  return swReady;
+}
+async function showNotif(title,opts){
+  if(!canNotify()||Notification.permission!=="granted")return false;
+  try{const reg=await setupSW();if(!reg)return false;await reg.showNotification(title,opts);return true;}catch(e){return false;}
+}
+function askNotify(){
+  if(!canNotify()||Notification.permission!=="default")return;
+  Notification.requestPermission().then(p=>{
+    updateTools();
+    if(p==="granted")showNotif("Notifications are on",{body:"Cost changes will pop up here — even when Chrome is minimised.",tag:"ca-test",icon:ICON_OK});
+  }).catch(()=>{});
+}
+function notifyChange(r){
+  if(notified.has(r.id)||!canNotify()||Notification.permission!=="granted")return;
+  notified.add(r.id);
+  const k=dir(r);
+  let body=r.old_cost!=null?`${f2(r.old_cost)} → ${f2(r.new_cost)} QAR`:`New cost ${f2(r.new_cost)} QAR`;
+  if(k==="up"||k==="down"){const d=r.new_cost-r.old_cost;
+    body+=`  ·  ${k==="up"?"Up":"Down"} ${f2(Math.abs(d))} (${d>0?"+":"−"}${Math.abs(d/r.old_cost*100).toFixed(1)}%)`;}
+  const extra=[r.code&&`Code ${r.code}`,r.supplier,r.note].filter(Boolean).join(" · ");
+  if(extra)body+="\n"+extra;
+  showNotif(`Cost changed: ${r.name}`,{
+    body,tag:"ca-"+r.id,renotify:true,requireInteraction:true,icon:ICON_ALERT,
+    data:{id:r.id,token:S.token,api:SUPABASE_URL,key:SUPABASE_KEY,url:location.href.split("#")[0]},
+    actions:[{action:"seen",title:"Seen"},{action:"open",title:"Open board"}]
+  }).then(ok=>{if(!ok)notified.delete(r.id);});
+}
+async function closeNotif(id){
+  notified.delete(id);
+  try{const reg=await navigator.serviceWorker.getRegistration();if(!reg)return;
+    (await reg.getNotifications({tag:"ca-"+id})).forEach(n=>n.close());}catch(e){}
+}
+// "Seen" pressed inside a Windows notification -> the service worker confirmed it -> stop the alarm here
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.addEventListener("message",e=>{
+    const m=e.data||{};
+    if(m.type==="ca-seen"&&m.ok){
+      const r=rows.find(x=>x.id===m.id);
+      if(r&&!r.me_seen){r.me_seen=true;r.seen.push({by:S?S.name:"",at:""});}
+      notified.delete(m.id);if(shown===m.id)shown=null;
+      render();poll();
+    }
+    if(m.type==="ca-open"&&S&&!$("board").classList.contains("hidden"))setTab("live");
+  });
+}
+$("notifBtn").onclick=async()=>{
+  const p=Notification.permission;
+  if(p==="default"){askNotify();return;}
+  if(p==="denied"){$("notifHelp").classList.toggle("hidden");return;}
+  const ok=await showNotif("Test: notifications are working",{body:"Cost changes will pop up here — with a Seen button.",tag:"ca-test",icon:ICON_OK});
+  if(!ok)$("notifHelp").classList.remove("hidden");
+};
+function updateTools(){
+  const staff=!!S&&S.role!=="admin";
+  $("tools").classList.toggle("hidden",!staff);
+  if(!staff)return;
+  const on=!!ctx&&ctx.state==="running";
+  const sb=$("soundBtn");
+  sb.className="tool "+(on?"on":"warn");
+  sb.innerHTML=on?`${ic("volume")}Sound on`:`${ic("volume-x")}Sound off — tap to turn on`;
+  sb.setAttribute("aria-label",on?"Sound is on. Play a test alarm":"Sound is off. Tap to turn sound on");
+  const nb=$("notifBtn");
+  if(!canNotify()){nb.classList.add("hidden");$("notifHelp").classList.add("hidden");return;}
+  const p=Notification.permission;
+  nb.className="tool "+(p==="granted"?"on":p==="denied"?"off":"warn");
+  nb.innerHTML=p==="granted"?`${ic("bell")}Notifications on`:p==="denied"?`${ic("bell-off")}Notifications blocked`:`${ic("bell")}Turn on notifications`;
+  nb.setAttribute("title",p==="granted"?"Send a test notification":p==="denied"?"How to unblock":"Allow Windows notifications");
+  if(p!=="denied")$("notifHelp").classList.add("hidden");
+}
+try{navigator.permissions.query({name:"notifications"}).then(s=>{s.onchange=updateTools;});}catch(e){}
 
 /* ---------- Recent tab: search history by barcode / code / name ---------- */
 let qTimer=null,qSeq=0;

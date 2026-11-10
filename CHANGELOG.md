@@ -2,6 +2,20 @@
 
 All notable changes to Cost Alert. Versions follow `MAJOR.MINOR.PATCH`.
 
+## v1.4.0 — 2026-11-10
+### Added
+- **Windows notifications** for every cost change. They pop up over every app (the sales software too), even with Chrome minimised, and stay on screen until someone answers.
+  - **Seen** button inside the notification confirms the change and stops the siren, without opening the board.
+  - **Open board** (or clicking the notification) brings the board to the front.
+  - Pressing SEEN on the board removes the notification too.
+  - Notifications still arrive after a reload, even before START is tapped.
+- START screen asks for notification permission. It only gets skipped once that question has been answered.
+- Board status buttons: **Sound on / Sound off — tap to turn on** (tap plays a test alarm) and **Notifications on / Turn on notifications / blocked** (tap sends a test notification or shows how to unblock).
+- Checks keep running every 3 s when Chrome is minimised (timers run in a Web Worker).
+- Starts without the START tap when Chrome already allows sound (kiosk shortcut with the autoplay flag, see README).
+- Any tap on the board switches sound back on if Chrome paused it.
+- New files: `sw.js` (handles notification buttons), `icon.png`, `icon-alert.png`.
+
 ## v1.3.0 — 2026-11-10
 ### Changed — full UI/UX redesign (see `DESIGN.md`)
 - New dark "signal board" design system: colour tokens, Inter type scale, 8-pt spacing, every colour pair measured to WCAG AA.
