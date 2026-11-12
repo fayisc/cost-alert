@@ -2,6 +2,12 @@
 
 All notable changes to Cost Alert. Versions follow `MAJOR.MINOR.PATCH`.
 
+## v1.6.1 — 2026-11-12
+### Fixed
+- **Updates now always load.** GitHub Pages lets browsers keep an old copy of the page for about 10 minutes, so screens could keep the old siren after an update.
+  - When a board opens and finds it's older than the live version, it fetches the new one by itself (once, so it can never loop).
+  - The **Update** button loads a fresh copy (unique `?v=` address) instead of a normal reload. The address bar is tidied afterwards.
+
 ## v1.6.0 — 2026-11-12
 ### Changed
 - **New alarm sound.** The siren sounded like a missile alarm, so it's replaced by a friendly bell chime ("ding-ding-ding"), like a shop announcement.

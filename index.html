@@ -585,7 +585,7 @@ select.input{appearance:none;padding-right:44px;cursor:pointer;
 
 <script>
 /* ===================== SETTINGS ===================== */
-const APP_VERSION = "1.6.0";               // bump this AND version.json on every release
+const APP_VERSION = "1.6.1";               // bump this AND version.json on every release
 const SUPABASE_URL = "https://gsjdwsbcinfuluoffcah.supabase.co";
 const SUPABASE_KEY = "sb_publishable_ggkvoNUwNfRT6ET5T5fOkw_zlarg8-p";   // publishable key (safe to publish)
 const SHOP = "Muhammed Bu Matar Trading";
@@ -1158,19 +1158,30 @@ $("q").addEventListener("input",()=>{clearTimeout(qTimer);qTimer=setTimeout(sear
 
 /* ---------- version + update notice ---------- */
 document.querySelectorAll(".ver").forEach(e=>e.textContent="v"+APP_VERSION);
-async function checkUpdate(){
+// GitHub Pages lets browsers keep an old copy for ~10 min, so updates load with a unique ?v= address (never the cached copy)
+let newVersion=null;
+const freshUrl=v=>location.pathname+"?v="+encodeURIComponent(v);
+async function checkUpdate(firstLoad){
   if(!location.protocol.startsWith("http"))return;   // only when opened from the website link
   try{
     const r=await fetch("version.json?ts="+Date.now(),{cache:"no-store"});if(!r.ok)return;
     const j=await r.json();
     if(j.version&&j.version!==APP_VERSION){
+      newVersion=j.version;
+      // just opened but the browser gave us its old copy: load the new version straight away (once, so it can never loop)
+      if(firstLoad){
+        let tried=null;try{tried=sessionStorage.getItem("ca_fresh_try");}catch(e){}
+        if(tried!==j.version){try{sessionStorage.setItem("ca_fresh_try",j.version);}catch(e){}location.replace(freshUrl(j.version));return;}
+      }
       $("updText").textContent=`New version v${j.version} is ready`;
       $("upd").classList.remove("hidden");
     }
   }catch(e){}
 }
-$("upd").onclick=()=>location.reload();
-checkUpdate();setInterval(checkUpdate,5*60*1000);
+$("upd").onclick=()=>location.replace(freshUrl(newVersion||APP_VERSION));
+// tidy the address bar after a fresh load (…/cost-alert/?v=1.6.1 → …/cost-alert/)
+if(/[?&]v=/.test(location.search)){try{history.replaceState(null,"",location.pathname+location.hash);}catch(e){}}
+checkUpdate(true);setInterval(()=>checkUpdate(false),5*60*1000);
 
 tick();setInterval(tick,10000);
 boot();
