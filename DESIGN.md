@@ -1,4 +1,4 @@
-# Cost Alert — Design System (v1.5.0)
+# Cost Alert — Design System (v1.6.0)
 
 A dark **signal board** for a hardware shop counter. The rule behind every decision:
 
@@ -11,15 +11,15 @@ A dark **signal board** for a hardware shop counter. The rule behind every decis
 
 | Channel | What happens | Why |
 |---|---|---|
-| Sound | 3 × siren sweep (800→1600 Hz), repeats every 10 s until **Seen** | Works when staff aren't looking at the screen |
+| Sound (v1.6) | Bell chime "ding-ding-ding": rising G5 → C6 → E6 (a major chord), played twice (~3 s), repeats every 10 s until **Seen**. Peak −0.9 dBFS, no clipping. [Listen](docs/alarm-chime.wav) | Clear in a busy shop and works when staff aren't looking, but sounds like a shop announcement, not an emergency siren |
 | Colour | Full-screen red scrim, slowly pulsing | Red = stop / warning in every culture |
 | Simplicity (v1.5) | Only four things on screen: what changed, the product, a giant new price (up to 160 px) with the up/down chip, and one **SEEN** button | One glance from across the counter is enough. Nothing competes with the price |
 | Contrast | White text straight on the red, at least 7.4:1 even at the brightest point of the pulse | Readable at any moment of the pulse |
 | Taskbar | Tab title flashes "⚠ COST CHANGED ⚠", favicon turns red | Visible even when the sales software is in front |
-| Windows notification (v1.4) | Pops over every app, even with Chrome minimised, and stays until answered. **Seen** button confirms and stops the siren. | Staff don't need to switch windows to see or confirm a change |
+| Windows notification (v1.4) | Pops over every app, even with Chrome minimised, and stays until answered. **Seen** button confirms and stops the alarm. | Staff don't need to switch windows to see or confirm a change |
 | Focus | Keyboard focus lands on **Seen**, Enter confirms | Fast for a cashier with hands on the keyboard |
 | Queue | "1 of 3" counter | Staff know how many are left |
-| Sound switch (v1.5) | Staff can switch the siren off. It switches back on by itself after 30 min, and the alert says "Alarm sound is off until 9:07 PM" | Quiet when needed, but a forgotten mute can't hide a change |
+| Sound switch (v1.5) | Staff can switch the alarm sound off. It switches back on by itself after 30 min, and the alert says "Alarm sound is off until 9:07 PM" | Quiet when needed, but a forgotten mute can't hide a change |
 
 **Flash safety:** the pulse runs at 0.67 cycles/s, well below the WCAG 2.3.1 limit of 3 flashes per second.
 With *reduced motion* switched on in the OS, the pulse stops and a static red is shown.

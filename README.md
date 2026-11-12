@@ -52,7 +52,7 @@ The board should show green **Sound on** and **Notifications on**. Tap them to t
 
 Notifications only work while the board is open (minimised is fine). If Chrome is fully closed, nothing can alert.
 
-**Sound on/off:** staff can turn the siren off with the **Sound** switch on the board. It turns back on by itself after 30 minutes.
+**Sound on/off:** staff can turn the alarm chime off with the **Sound** switch on the board ([hear the chime](docs/alarm-chime.wav)). It turns back on by itself after 30 minutes.
 
 **No sound?** Check the **Sound** button on the board. Tap it if it's amber or red. Make sure the speaker is on and not muted, and that the Chrome tab isn't muted (right-click the tab).
 

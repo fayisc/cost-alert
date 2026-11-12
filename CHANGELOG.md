@@ -2,6 +2,15 @@
 
 All notable changes to Cost Alert. Versions follow `MAJOR.MINOR.PATCH`.
 
+## v1.6.0 — 2026-11-12
+### Changed
+- **New alarm sound.** The siren sounded like a missile alarm, so it's replaced by a friendly bell chime ("ding-ding-ding"), like a shop announcement.
+  - Rising G5 → C6 → E6 (a major chord), played twice, about 3 s. Repeats every 10 s until **SEEN**, same as before.
+  - Bell tone made from sine partials that fade at different speeds. Gentle compression keeps every note clear.
+  - As loud as possible without distortion (peak ≈ 0.9, no clipping). Volume is `CHIME_VOLUME` in `index.html`.
+  - Preview: `docs/alarm-chime.wav`.
+- Phone vibration pattern shortened to match.
+
 ## v1.5.0 — 2026-11-10
 ### Added
 - **Sound on/off switch** on the staff board. Tap to turn the siren off, tap again to turn it on (plays a short test alarm).

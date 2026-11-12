@@ -13,7 +13,7 @@
 <!--
   COST ALERT  -  Muhammed Bu Matar Trading
   Admin login -> update costs, see who confirmed, manage staff logins.
-  Staff login -> full-screen board, siren + alert until they press SEEN, Recent search.
+  Staff login -> full-screen board, chime + alert until they press SEEN, Recent search.
   Design system: see DESIGN.md (tokens below are the single source of truth).
 -->
 <style>
@@ -585,7 +585,7 @@ select.input{appearance:none;padding-right:44px;cursor:pointer;
 
 <script>
 /* ===================== SETTINGS ===================== */
-const APP_VERSION = "1.5.0";               // bump this AND version.json on every release
+const APP_VERSION = "1.6.0";               // bump this AND version.json on every release
 const SUPABASE_URL = "https://gsjdwsbcinfuluoffcah.supabase.co";
 const SUPABASE_KEY = "sb_publishable_ggkvoNUwNfRT6ET5T5fOkw_zlarg8-p";   // publishable key (safe to publish)
 const SHOP = "Muhammed Bu Matar Trading";
@@ -841,35 +841,38 @@ $("ulist").addEventListener("click",async e=>{
 });
 
 /* ---------- board + alert ---------- */
+/* Alarm sound: a friendly "ding-ding-ding" bell chime, like a shop announcement.
+   Rising G5 → C6 → E6 (a major chord), played twice (~3 s). Bell tone = a few sine partials
+   that fade out at different speeds, so it rings clearly without sounding like a siren. */
+const CHIME_NOTES=[783.99,1046.50,1318.51];                  // G5, C6, E6 (Hz)
+const CHIME_PARTIALS=[[1,1,1.3],[2,.38,.75],[3,.16,.45],[4.2,.07,.25]];   // [freq ratio, level, fade seconds]
+const CHIME_VOLUME=1.5;                                      // peak ≈ 0.9: as loud as possible without distortion
+function playChime(ac,dest,t0){
+  const comp=ac.createDynamicsCompressor();                  // evens out the level so every note is clearly heard
+  comp.threshold.value=-18;comp.knee.value=12;comp.ratio.value=3;comp.attack.value=0.003;comp.release.value=0.3;
+  const out=ac.createGain();out.gain.value=CHIME_VOLUME;
+  comp.connect(out).connect(dest);
+  [0,1.25].forEach(rep=>CHIME_NOTES.forEach((f,i)=>{
+    const s=t0+rep+i*0.3, ring=(rep>0&&i===CHIME_NOTES.length-1)?1.9:1;   // the very last note rings longer
+    CHIME_PARTIALS.forEach(([ratio,level,fade])=>{
+      const o=ac.createOscillator(),g=ac.createGain(),end=s+fade*ring;
+      o.type="sine";o.frequency.value=f*ratio;
+      g.gain.setValueAtTime(0.0001,s);
+      g.gain.exponentialRampToValueAtTime(level*0.42,s+0.008);   // soft but quick strike
+      g.gain.exponentialRampToValueAtTime(0.0001,end);
+      o.connect(g).connect(comp);o.start(s);o.stop(end+0.02);
+    });
+  }));
+}
 function beep(){
-  // Loud siren: 3 x "wee-woo" sweeps (~1.8 s), two harsh detuned tones pushed through a compressor
   if(isMuted()){lastBeep=Date.now();return;}   // staff switched the sound off (comes back on by itself)
   if(ctx){
     try{
       if(ctx.state==="suspended")ctx.resume();
-      const t0=ctx.currentTime+0.02;
-      const comp=ctx.createDynamicsCompressor();
-      comp.threshold.value=-12;comp.knee.value=6;comp.ratio.value=8;comp.attack.value=0.002;comp.release.value=0.1;
-      const master=ctx.createGain();master.gain.value=1;
-      comp.connect(master).connect(ctx.destination);
-      for(let i=0;i<3;i++){
-        const s=t0+i*0.6;
-        [["square",0],["sawtooth",700]].forEach(([type,det])=>{
-          const o=ctx.createOscillator(),g=ctx.createGain();
-          o.type=type;o.detune.value=det;
-          o.frequency.setValueAtTime(800,s);
-          o.frequency.linearRampToValueAtTime(1600,s+0.25);
-          o.frequency.linearRampToValueAtTime(800,s+0.5);
-          g.gain.setValueAtTime(0.0001,s);
-          g.gain.exponentialRampToValueAtTime(0.6,s+0.02);
-          g.gain.setValueAtTime(0.6,s+0.46);
-          g.gain.exponentialRampToValueAtTime(0.0001,s+0.55);
-          o.connect(g).connect(comp);o.start(s);o.stop(s+0.56);
-        });
-      }
+      playChime(ctx,ctx.destination,ctx.currentTime+0.02);
     }catch(e){}
   }
-  try{if(navigator.vibrate)navigator.vibrate([400,150,400,150,400]);}catch(e){}
+  try{if(navigator.vibrate)navigator.vibrate([300,150,300]);}catch(e){}
   lastBeep=Date.now();
 }
 // flash the tab title + favicon so the alert shows on the taskbar even behind other windows
